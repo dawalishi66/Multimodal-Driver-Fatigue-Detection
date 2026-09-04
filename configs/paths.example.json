@@ -1,0 +1,7 @@
+{
+  "uldd_root": "data/uldd",
+  "dcpt_root": "data/dcpt",
+  "feature_root": "processed",
+  "artifact_root": "artifacts",
+  "run_root": "runs"
+}

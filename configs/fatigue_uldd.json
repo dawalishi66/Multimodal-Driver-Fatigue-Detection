@@ -1,0 +1,23 @@
+{
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "task": "fatigue",
+  "dataset": "UL-DD",
+  "status": "preflight_required",
+  "modalities": ["video", "can"],
+  "label_scheme": "uldd_kss_4_7_v1",
+  "classes": ["low", "medium", "high"],
+  "window_ms": 30000,
+  "stride_ms": 30000,
+  "video_subwindow_ms": 5000,
+  "parent_ms": 240000,
+  "subject_splits": {
+    "train": ["D", "F", "G", "J", "K", "L", "N", "Q", "R", "S"],
+    "val": ["A", "E", "O"],
+    "test": ["C", "H", "P"]
+  },
+  "training_seeds": [11, 22, 33],
+  "preflight_min_valid_ratio": 0.95,
+  "primary_unit": "parent_240s",
+  "secondary_unit": "window_30s"
+}
