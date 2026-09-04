@@ -1,0 +1,3 @@
+# 与 pyproject.toml 保持一致；推荐 `python -m pip install -e ".[dev]"`。
+numpy>=1.24,<3
+pytest>=7,<9

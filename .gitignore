@@ -149,6 +149,9 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+*.pem
+*.key
 .envrc
 .venv
 env/
@@ -208,6 +211,40 @@ tempCodeRunnerFile.py
 
 # PyPI configuration file
 .pypirc
+
+# Driver-state project data and generated artifacts
+/data/
+/raw/
+/processed/
+/artifacts/
+/runs/
+/checkpoints/
+/outputs/
+/wandb/
+/mlruns/
+
+# Features and model binaries belong in controlled external storage
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.h5
+*.hdf5
+*.npz
+*.npy
+
+# Local-only configuration and secrets
+*.local.yaml
+*.local.yml
+*.local.json
+validation_report.json
+.secrets/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
 # Marimo
 marimo/_static/

@@ -1,0 +1,16 @@
+{
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "task": "distraction",
+  "dataset": "DCPT",
+  "status": "preflight_required",
+  "modalities": ["video", "audio"],
+  "classes": ["No task", "Watching video", "Playing game", "Messaging", "Phone call", "Listening to radio", "Reading", "Eating", "Chatting with passenger"],
+  "nominal_window_ms": 10000,
+  "split_seed": 2026,
+  "subject_counts_if_all_eligible": {"train": 24, "val": 8, "test": 8},
+  "subject_manifest_status": "not_yet_frozen",
+  "training_seeds": [11, 22, 33],
+  "preflight_min_valid_ratio": 0.95,
+  "primary_unit": "original_clip"
+}
