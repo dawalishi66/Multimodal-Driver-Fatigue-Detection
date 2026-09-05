@@ -1,1 +1,5 @@
-"""Owner: 饶棋涛. Future dual-modal MulT adapter; upstream code is not copied yet."""
+"""Two-modal MulT model owned by 饶棋涛."""
+
+from .model import DualModalMulT
+
+__all__ = ["DualModalMulT"]
