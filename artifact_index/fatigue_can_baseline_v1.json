@@ -5,8 +5,8 @@
   "baseline": "can_gru_baseline_v1",
   "processed_root_reference": "Processed_CAN_v1",
   "latest_preflight": {
-    "run_id": "can_preflight_gru_v1_20260908T092805Z",
-    "relative_path": "baselines/fatigue_can/gru_v1/preflight/can_preflight_gru_v1_20260908T092805Z",
+    "run_id": "can_preflight_gru_v1_20260908T093232Z",
+    "relative_path": "baselines/fatigue_can/gru_v1/preflight/can_preflight_gru_v1_20260908T093232Z",
     "status": "PASS",
     "formal_result": false,
     "test_manifest_accessed": false,
@@ -14,7 +14,7 @@
       {
         "name": "environment.txt",
         "size_bytes": 519,
-        "sha256": "040201863f1b32dd727102902bba12cabfa9088898a9a77e224c61e1baecc81c"
+        "sha256": "9745b7674f57904800026ff0f1861a1af05c57acec373947b22df4b3f3793d62"
       },
       {
         "name": "normalizer.json",
@@ -23,8 +23,8 @@
       },
       {
         "name": "preflight_report.json",
-        "size_bytes": 2658,
-        "sha256": "74bbfae5e05a4d578cffbe8384d44102d61deae8a12e0bbb93eb4dffc8f19653"
+        "size_bytes": 2659,
+        "sha256": "ecebe1c77d127244ecaa6c9a4cc01080a49e98f42d87307f8e6c482f4c280cdf"
       },
       {
         "name": "resolved_config.json",
@@ -33,8 +33,8 @@
       },
       {
         "name": "run_manifest.json",
-        "size_bytes": 1491,
-        "sha256": "306b9c6b23afc722ccff914a75d04d54e148dc3c744f72b220926917544dc1fa"
+        "size_bytes": 1492,
+        "sha256": "6e804e55f9995541fe434c953e67c4ca4da092251bedc94a6f6e58e628fa66b9"
       },
       {
         "name": "SMOKE_ONLY_DO_NOT_USE.pt",
