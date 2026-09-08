@@ -7,10 +7,12 @@ from .pipeline import (
     detect_clock_discontinuities,
     resample_can_window,
 )
+from .splits import write_can_split_manifests
 
 __all__ = [
     "CAN_FEATURE_COLUMNS",
     "build_can_dataset",
     "detect_clock_discontinuities",
     "resample_can_window",
+    "write_can_split_manifests",
 ]

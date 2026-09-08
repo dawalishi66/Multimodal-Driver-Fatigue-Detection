@@ -1002,6 +1002,8 @@ def build_can_dataset(
         "- `reports/`：数据审计和验证报告。\n"
         "- `manifests/`：输入哈希、参数、统计和限制。\n"
         "- `logs/`：命令运行日志。\n\n"
+        "冻结划分后，训练读取 `manifests/can_train_windows_v1.csv`，调参与早停读取 "
+        "`can_val_windows_v1.csv`。模型方案冻结前不要读取 `can_test_windows_v1.csv`。\n\n"
         "不得把本目录的 NPZ 特征整体提交到 GitHub。\n"
     ))
     return audit

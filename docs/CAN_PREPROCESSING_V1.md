@@ -57,3 +57,17 @@ python tools/validate_can_metadata.py `
 ```
 
 验证器 PASS 只代表 metadata 和特征结构、标签、split、时间网格及 CAN 特征约束通过，不代表视频与 CAN 已完成同步验收。
+
+## 冻结训练划分
+
+在预处理与验证完成后生成训练清单，不复制 NPZ：
+
+```powershell
+python tools/split_can_metadata.py `
+  --metadata (Join-Path $processedRoot "metadata/can_windows_30s_v1.csv") `
+  --output-root $processedRoot
+```
+
+训练、验证和最终测试分别读取 `manifests/can_train_windows_v1.csv`、
+`can_val_windows_v1.csv` 和 `can_test_windows_v1.csv`。被排除的行单独保存在
+`can_excluded_windows_v1.csv`，不得进入训练。
