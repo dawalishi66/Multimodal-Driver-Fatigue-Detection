@@ -1,4 +1,4 @@
-# UL-DD CAN 基线训练前置准备 v1
+# UL-DD CAN 基线与训练前置准备 v1
 
 本模块落实实验总规范 v0.2 的 CAN 单模态训练前置条件。它不执行正式训练，
 不生成 validation/test 成绩，也不宣称完成视频与 CAN 的公平配对主实验。
@@ -57,6 +57,26 @@ tools/baselines/fatigue_can/prepare.py 将执行：
 
 每次生成新目录，不覆盖旧运行。PASS 只表示 G1 和部分 G2 前置检查完成；
 跨模态时间同步、共同配对 cohort、正式三种子训练与最终 test 均不在本步骤内。
+
+## CAN-only train/val 开发实验
+
+`gru_v1_train_val.json` 和 `train.py` 用于当前 CAN complete-8 集合上的
+单模态开发训练。它严格只读取 train/val，先完成 seed 11 的完整性关卡，再继续
+seed 22、33；三个种子分别用 validation 父区间 Macro-F1 早停和选择检查点。
+
+    python tools/baselines/fatigue_can/train.py ^
+      --processed-root "<Processed_CAN_v1目录>" ^
+      --config configs/baselines/fatigue_can/gru_v1_train_val.json ^
+      --device cuda
+
+未指定输出目录时，完整运行包写入
+`<Processed_CAN_v1>/baselines/fatigue_can/gru_v1/runs/<experiment_id>/`。
+运行包保存每个种子的最佳参数、训练曲线、validation 窗口和父区间预测、指标、
+环境、配置及哈希。它不读取或评价 test，并明确标为 `formal_result=false`。
+
+当前集合不是视频+CAN共同配对集合，因此本结果只能作为 CAN 管线与单模态初步
+实验，不能与视频、简单融合或 MulT 分数作正式公平主对比。共同集合冻结后必须
+使用相同训练入口重新运行正式实验。
 
 ## 正式训练前仍需冻结
 

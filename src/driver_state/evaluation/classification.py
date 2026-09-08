@@ -54,6 +54,9 @@ def classification_metrics(
         "sample_count": int(y_true.size),
         "accuracy": float(accuracy_score(y_true, predictions)),
         "macro_f1_fixed_classes": float(np.mean(f1)),
+        "macro_f1_supported_classes": float(
+            np.mean(f1[supported]) if supported.any() else 0.0
+        ),
         "balanced_accuracy_supported_classes": float(
             np.mean(recall[supported]) if supported.any() else 0.0
         ),

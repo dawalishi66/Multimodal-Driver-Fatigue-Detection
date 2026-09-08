@@ -5,10 +5,12 @@ from driver_state.engine.reproducibility import (
     environment_text,
     set_random_seed,
 )
+from driver_state.engine.training import EarlyStoppingTracker
 
 __all__ = [
     "capture_environment",
     "capture_git_state",
     "environment_text",
     "set_random_seed",
+    "EarlyStoppingTracker",
 ]

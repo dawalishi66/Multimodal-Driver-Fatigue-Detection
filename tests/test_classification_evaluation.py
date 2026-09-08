@@ -6,6 +6,7 @@ from driver_state.evaluation import (
     classification_metrics,
     majority_class_from_train,
 )
+from driver_state.engine import EarlyStoppingTracker
 
 
 def test_fixed_class_metrics_are_independently_checkable():
@@ -16,6 +17,7 @@ def test_fixed_class_metrics_are_independently_checkable():
     ])
     result = classification_metrics([0, 1, 2], probabilities, num_classes=3)
     assert result["macro_f1_fixed_classes"] == 1.0
+    assert result["macro_f1_supported_classes"] == 1.0
     assert result["balanced_accuracy_supported_classes"] == 1.0
     assert result["confusion_matrix"] == [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
@@ -54,3 +56,21 @@ def test_parent_aggregation_rejects_duplicate_or_missing_window():
 def test_majority_class_uses_train_labels_and_stable_tie_break():
     assert majority_class_from_train([1, 1, 2, 0], num_classes=3) == 1
     assert majority_class_from_train([2, 2, 1, 1], num_classes=3) == 1
+
+
+def test_supported_class_macro_f1_keeps_fixed_class_result_separate():
+    result = classification_metrics(
+        [0, 0], [[0.9, 0.1, 0.0], [0.8, 0.2, 0.0]], num_classes=3
+    )
+    assert result["macro_f1_fixed_classes"] == pytest.approx(1 / 3)
+    assert result["macro_f1_supported_classes"] == 1.0
+
+
+def test_early_stopping_keeps_earlier_epoch_on_tie():
+    tracker = EarlyStoppingTracker(patience=2)
+    assert tracker.update(epoch=1, metric=0.4)
+    assert not tracker.update(epoch=2, metric=0.4)
+    assert tracker.best_epoch == 1
+    assert not tracker.should_stop
+    assert not tracker.update(epoch=3, metric=0.3)
+    assert tracker.should_stop
