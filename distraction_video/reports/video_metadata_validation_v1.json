@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "scope": "distraction_video",
+  "schema_version": "0.2.0",
+  "row_count": 714,
+  "errors": [],
+  "warnings": [],
+  "limitations": [
+    "DCPT official subject split not yet available",
+    "real audio-video synchronization is not checked here"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "feature_version": "r3d18_kinetics400_v1",
+  "extractor_name": "torchvision_r3d_18",
+  "extractor_version": "0.24.1",
+  "weights_path": "TO_BE_FILLED/r3d_18-b3b3357e.pth",
+  "data_root": "TO_BE_FILLED",
+  "extracted_dir": "TO_BE_FILLED/extracted",
+  "manifest_path": "TO_BE_FILLED/metadata/video_samples_v0_pre.jsonl",
+  "output_dir": "TO_BE_FILLED/processed/video_features_v1",
+  "index_path": "TO_BE_FILLED/processed/video_feature_index_v1.jsonl",
+  "log_path": "TO_BE_FILLED/reports/feature_extraction_log_v1.jsonl",
+  "clip_duration_s": 10.0,
+  "segments": 10,
+  "frames_per_second": 16,
+  "batch_size": 16,
+  "device": "cuda",
+  "min_valid_raw_fraction": 0.95,
+  "weights_sha256": "B3B3357EAD25631EC9C57362FF2128A92D0427E01E2CD184951A44380C3F2E9D"
+}
