@@ -253,3 +253,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local full-spec working copy (contains machine-specific paths; never commit).
+/驾驶员状态检测项目_实验总规范_v0.2.md
