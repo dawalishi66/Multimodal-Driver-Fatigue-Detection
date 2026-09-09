@@ -19,7 +19,8 @@
 ## 交给 AI 的最小背景
 
 ```text
-先读取 README.md、docs/EXPERIMENT_RULES.md、docs/INTERFACES.md 和 CONTRIBUTING.md。
+先读取 README.md、CONTRIBUTING.md、docs/GITHUB_WORKFLOW.md、
+docs/EXPERIMENT_RULES.md 和 docs/INTERFACES.md。
 另外完整读取团队提供的实验总规范 v0.2；若没有拿到，先说明缺少完整版，不能自行推断缺失决定。
 
 本次负责人：[姓名]
