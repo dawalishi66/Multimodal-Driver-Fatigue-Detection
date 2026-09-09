@@ -82,3 +82,35 @@ python scripts/validate_distraction_audio_metadata.py \
 2. Pre-feature valid-row policy (all `NO_FEATURES_YET` vs an exception).
 3. P04: cross-modal main-id / common start verification with 陈星宇.
 4. P07: PANNs feature extraction, feature-version freeze and `valid=true` flip.
+
+## Video-aligned 6-class fusion set (v1, 胡煦轩)
+
+The distraction-video module (陈星宇) covers the six tasks that have upper-body
+video (01/03/04/05/07/08, 714 clips) with provisional 6-class labels and a
+24/8/8 seed-2026 subject split. The audio side mirrors it exactly so a later
+fusion model can join by `sample_id`:
+
+- `fusion_labels.py` holds the shared 6c task->label contract.
+- `build_audio_6c_metadata.py` filters the 9c audit CSV to those six tasks and
+  emits `metadata/audio_windows_10s_v1.csv` (video column order, valid rows once
+  features exist).
+- `validate_audio_6c.py` is a 6c-aware validator (the public validator is
+  hard-coded to 9 classes).
+- `check_fusion_pairs.py` asserts audio/video `sample_id`, label and split sets
+  are identical (result: 714/714 common, 0 mismatches).
+
+## Audio feature version v1 (PANNs Cnn14_16k)
+
+Frozen `Cnn14_16k` (AudioSet-pretrained, `Cnn14_16k_mAP=0.438.pth`), input 16 kHz
+mono waveform (mean-channel downmix, soxr resample from 44.1 kHz), five 2 s
+blocks -> `[5, 2048]` embedding per clip. NPZ files carry the five standard
+arrays; feature version `panns_cnn14_16k_v1`.
+
+## Audio baseline v1 (fusion-aligned, 6c)
+
+BiGRU hidden 192, dropout 0.25, mean+max+last pooling, AdamW 3e-4/5e-4, batch 32,
+max_epochs 100, patience 15, val Macro-F1 selection, seeds 11/22/33. Test
+Macro-F1 = 0.5682 +/- 0.0206 (video-only v4: 0.6910 +/- 0.0601, same cohort).
+Per-clip predictions/metrics/checkpoints follow the video baseline file layout.
+This is an honest single-modality result; fusion is a separate later step owned
+by the fusion lead.
