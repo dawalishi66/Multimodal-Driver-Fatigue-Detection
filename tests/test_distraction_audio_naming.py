@@ -23,7 +23,7 @@ def test_parse_full_archive_path() -> None:
     assert ref.start_hhmmss == "093143"
     assert ref.takeover_decisec == 12
     assert ref.stem == "01_P01_20231111_09_31_43_12"
-    assert ref.session_id == "20231111_093143"
+    assert ref.session_id == "P01_20231111_0931_43"
     assert ref.extension == "wav"
 
 

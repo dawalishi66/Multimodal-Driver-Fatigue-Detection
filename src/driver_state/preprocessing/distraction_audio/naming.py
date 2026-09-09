@@ -56,8 +56,15 @@ class DcptClipRef:
 
     @property
     def session_id(self) -> str:
-        """Recording start instant; one takeover trial maps to one session."""
-        return f"{self.date}_{self.start_hhmmss}"
+        """Recording start instant, aligned to the distraction-video session id.
+
+        The distraction-video module (陈星宇) identifies a session as
+        ``P<subject>_<date>_<HHMM>_<SS>`` (subject, date, hour+minute, second),
+        e.g. ``P01_20231111_0931_43``. The audio side mirrors that exact form so
+        later multimodal fusion can join both modalities on a shared ``session_id``
+        plus the ``sample_id`` main identifier.
+        """
+        return f"{self.subject_id}_{self.date}_{self.start_hhmmss[:4]}_{self.start_hhmmss[4:]}"
 
     @property
     def label_id(self) -> int:

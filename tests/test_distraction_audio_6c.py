@@ -16,12 +16,15 @@ from driver_state.preprocessing.distraction_audio.build_audio_6c_metadata import
 )
 from driver_state.preprocessing.distraction_audio.check_fusion_pairs import check_fusion_pairs
 from driver_state.preprocessing.distraction_audio.fusion_labels import (
+    AUDIO_LABEL_SCHEME_NAME,
+    AUDIO_SPLIT_VERSION,
     SIX_CLASS_NAMES,
     is_six_class_task,
     load_label_scheme,
     load_subject_splits,
     six_class_label,
 )
+from driver_state.preprocessing.distraction_audio.naming import parse_clip_filename
 from driver_state.preprocessing.distraction_audio.validate_audio_6c import validate_audio_6c
 
 TASKS = ["01", "03", "04", "05", "07", "08"]
@@ -47,7 +50,7 @@ def _stem(task: str, subject: str, session: str) -> str:
 def _write_scheme(tmp: Path) -> Path:
     path = tmp / "label_scheme.json"
     path.write_text(json.dumps({
-        "label_scheme": "dcpt_audio_6c_v1",
+        "label_scheme": AUDIO_LABEL_SCHEME_NAME,
         "class_names": list(SIX_CLASS_NAMES),
         "task_to_class": {t: i for i, t in enumerate(TASKS)},
     }), encoding="utf-8")
@@ -57,7 +60,7 @@ def _write_scheme(tmp: Path) -> Path:
 def _write_splits(tmp: Path) -> Path:
     path = tmp / "splits.json"
     path.write_text(json.dumps({
-        "split_version": "dcpt_subject_24_8_8_seed2026_v1_provisional_audio_mirror",
+        "split_version": AUDIO_SPLIT_VERSION,
         "splits": SPLIT_MAP,
     }), encoding="utf-8")
     return path
@@ -149,7 +152,13 @@ def test_builder_core(tmp_path: Path) -> None:
     splits = load_subject_splits(_write_splits(tmp_path))
     rows = build_6c_rows(_audit_rows(), scheme, splits)
     assert len(rows) == 6  # 8 candidates minus the two non-6c tasks
-    assert all(r["label_scheme"] == "dcpt_audio_6c_v1" for r in rows)
+    assert all(r["label_scheme"] == AUDIO_LABEL_SCHEME_NAME for r in rows)
+    # session_id is re-derived from the sample_id stem to mirror the video module.
+    assert all(r["session_id"] for r in rows)
+    assert rows[0]["session_id"] == "P01_20231111_0931_43"
+    # source_file mirrors the video format: a single-element JSON array.
+    assert json.loads(rows[0]["source_file"]) == [
+        f"First_person_view_audio/{rows[0]['sample_id']}.wav"]
     for r in rows:
         task = r["sample_id"][:2]
         assert (int(r["label_id"]), r["label_class"]) == six_class_label(int(task))
@@ -170,13 +179,15 @@ def test_validate_6c_pass_with_features(tmp_path: Path) -> None:
         stem = _stem(task, subject, session)
         rel = _feature_npz(feature_root, stem)
         label_id, label_class = six_class_label(int(task))
+        ref = parse_clip_filename(f"{stem}.wav")
+        assert ref is not None
         rows.append({
             "sample_id": stem, "modality": "audio", "subject_id": subject,
-            "session_id": session, "split": SPLIT_MAP[subject],
+            "session_id": ref.session_id, "split": SPLIT_MAP[subject],
             "source_file": f"First_person_view_audio/{stem}.wav",
             "window_index": "0", "window_start_ms": "0", "window_end_ms": "10000",
             "duration_ms": "10000", "label_class": label_class, "label_id": str(label_id),
-            "label_scheme": "dcpt_audio_6c_v1", "valid": "true", "valid_ratio": "1",
+            "label_scheme": AUDIO_LABEL_SCHEME_NAME, "valid": "true", "valid_ratio": "1",
             "mask": f"{rel}::valid_mask", "feature_path": rel,
             "feature_shape": "[5, 8]", "feature_dtype": "float32",
             "extractor_name": "panns_cnn14_16k",
@@ -200,13 +211,15 @@ def test_validate_6c_fails_wrong_label(tmp_path: Path) -> None:
     rel = _feature_npz(feature_root, stem)
     label_id, _ = six_class_label(int(task))
     wrong_class = SIX_CLASS_NAMES[(label_id + 1) % 6]
+    ref = parse_clip_filename(f"{stem}.wav")
+    assert ref is not None
     row = {
         "sample_id": stem, "modality": "audio", "subject_id": subject,
-        "session_id": session, "split": SPLIT_MAP[subject],
+        "session_id": ref.session_id, "split": SPLIT_MAP[subject],
         "source_file": f"First_person_view_audio/{stem}.wav",
         "window_index": "0", "window_start_ms": "0", "window_end_ms": "10000",
         "duration_ms": "10000", "label_class": wrong_class, "label_id": str(label_id),
-        "label_scheme": "dcpt_audio_6c_v1", "valid": "true", "valid_ratio": "1",
+        "label_scheme": AUDIO_LABEL_SCHEME_NAME, "valid": "true", "valid_ratio": "1",
         "mask": f"{rel}::valid_mask", "feature_path": rel,
         "feature_shape": "[5, 8]", "feature_dtype": "float32",
         "extractor_name": "panns_cnn14_16k",
@@ -226,14 +239,23 @@ def test_check_fusion_pairs_pass_and_fail(tmp_path: Path) -> None:
     video_rows = []
     for (task, subject, session), stem in zip(CLIPS, stems):
         label_id, label_class = six_class_label(int(task))
-        base = {"sample_id": stem, "subject_id": subject, "split": SPLIT_MAP[subject],
-                "label_id": str(label_id), "label_class": label_class}
-        audio_rows.append(dict(base, modality="audio"))
-        video_rows.append(dict(base, modality="video"))
+        ref = parse_clip_filename(f"{stem}.wav")
+        assert ref is not None
+        base = {
+            "sample_id": stem, "subject_id": subject, "session_id": ref.session_id,
+            "split": SPLIT_MAP[subject], "label_id": str(label_id),
+            "label_class": label_class,
+        }
+        audio_rows.append(dict(base, modality="audio",
+                               source_file=f'["First_person_view_audio/{stem}.wav"]'))
+        video_rows.append(dict(base, modality="video",
+                               source_file=f'["Upper_body_video_01/{stem}.mp4"]'))
     ok = check_fusion_pairs(audio_csv=_write_csv_tmp(tmp_path, "audio.csv", audio_rows),
                             video_csv=_write_csv_tmp(tmp_path, "video.csv", video_rows))
     assert ok["status"] == "PASS"
     assert ok["common_samples"] == 6
+    assert ok["session_mismatch_count"] == 0
+    assert ok["source_mismatch_count"] == 0
 
     video_rows[0]["label_class"] = "No task"  # may or may not be wrong; force mismatch
     task0 = stems[0][:2]
@@ -244,6 +266,22 @@ def test_check_fusion_pairs_pass_and_fail(tmp_path: Path) -> None:
                              video_csv=_write_csv_tmp(tmp_path, "video2.csv", video_rows))
     assert bad["status"] == "FAIL"
     assert bad["label_mismatch_count"] >= 1
+
+    # A session_id drift must be caught.
+    drift_rows = [dict(r) for r in video_rows]
+    drift_rows[0]["session_id"] = "P01_20231111_9999_99"
+    drift = check_fusion_pairs(audio_csv=_write_csv_tmp(tmp_path, "audio.csv", audio_rows),
+                               video_csv=_write_csv_tmp(tmp_path, "video3.csv", drift_rows))
+    assert drift["status"] == "FAIL"
+    assert drift["session_mismatch_count"] == 1
+
+    # A source_file whose basename does not equal sample_id must be caught.
+    bad_src_rows = [dict(r) for r in video_rows]
+    bad_src_rows[0]["source_file"] = '["Upper_body_video_01/9999_wrong_stem.mp4"]'
+    bad_src = check_fusion_pairs(audio_csv=_write_csv_tmp(tmp_path, "audio.csv", audio_rows),
+                                 video_csv=_write_csv_tmp(tmp_path, "video4.csv", bad_src_rows))
+    assert bad_src["status"] == "FAIL"
+    assert bad_src["source_mismatch_count"] >= 1
 
 
 def _write_csv_tmp(tmp: Path, name: str, rows: list[dict[str, str]]) -> Path:

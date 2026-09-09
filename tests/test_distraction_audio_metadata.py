@@ -65,7 +65,7 @@ def test_directory_source_builds_metadata_and_sidecar(tmp_path: Path) -> None:
     first = next(row for row in rows if row["sample_id"].startswith("01_"))
     assert first["sample_id"] == "01_P01_20231111_09_31_43_12"
     assert first["subject_id"] == "P01"
-    assert first["session_id"] == "20231111_093143"
+    assert first["session_id"] == "P01_20231111_0931_43"
     assert first["split"] == ""
     assert first["valid"] == "false"
     assert first["valid_ratio"] == "0"

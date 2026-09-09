@@ -20,6 +20,24 @@ def _read(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def _source_basenames(value: str) -> list[str]:
+    """Return the basename(s) of a source_file entry (JSON array or bare path)."""
+    entries: list[str]
+    if value.startswith("["):
+        entries = json.loads(value)
+        if not isinstance(entries, list):
+            return []
+    else:
+        entries = [value]
+    names: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, str) or not entry:
+            continue
+        base = entry.replace("\\", "/").rsplit("/", 1)[-1]
+        names.append(base.rsplit(".", 1)[0])
+    return names
+
+
 def check_fusion_pairs(
     audio_csv: Path | str,
     video_csv: Path | str,
@@ -37,17 +55,30 @@ def check_fusion_pairs(
     common = audio_ids & video_ids
     label_mismatch: list[tuple[str, str, str, str, str]] = []
     split_mismatch: list[tuple[str, str, str, str, str]] = []
+    session_mismatch: list[tuple[str, str, str]] = []
+    source_mismatch: list[tuple[str, str, str]] = []
     for sample_id in sorted(common):
         a, v = audio[sample_id], video[sample_id]
         if (a["label_id"], a["label_class"]) != (v["label_id"], v["label_class"]):
             label_mismatch.append((sample_id, a["label_id"], a["label_class"],
                                    v["label_id"], v["label_class"]))
+        # session_id must be byte-identical across modalities for a fusion join.
+        a_session = a.get("session_id", "")
+        v_session = v.get("session_id", "")
+        if a_session and v_session and a_session != v_session:
+            session_mismatch.append((sample_id, a_session, v_session))
         a_split = a["split"]
         # validate against each side's subject list where possible
         if a["subject_id"] != v["subject_id"]:
             split_mismatch.append((sample_id, a["subject_id"], v["subject_id"], a_split, v["split"]))
         elif a_split != v["split"]:
             split_mismatch.append((sample_id, a["subject_id"], v["subject_id"], a_split, v["split"]))
+        # source_file entries must share the sample_id main identifier (basename minus extension).
+        audio_names = _source_basenames(a.get("source_file", ""))
+        video_names = _source_basenames(v.get("source_file", ""))
+        if audio_names and video_names:
+            if set(audio_names) != set(video_names) or sample_id not in audio_names:
+                source_mismatch.append((sample_id, ",".join(audio_names), ",".join(video_names)))
 
     errors: list[str] = []
     if only_audio:
@@ -58,6 +89,10 @@ def check_fusion_pairs(
         errors.append(f"label mismatches on common samples: {len(label_mismatch)} e.g. {label_mismatch[:5]}")
     if split_mismatch:
         errors.append(f"subject/split mismatches: {len(split_mismatch)} e.g. {split_mismatch[:5]}")
+    if session_mismatch:
+        errors.append(f"session_id mismatches: {len(session_mismatch)} e.g. {session_mismatch[:5]}")
+    if source_mismatch:
+        errors.append(f"source_file basename mismatches: {len(source_mismatch)} e.g. {source_mismatch[:5]}")
 
     result: dict[str, object] = {
         "status": "PASS" if not errors else "FAIL",
@@ -68,6 +103,8 @@ def check_fusion_pairs(
         "only_video_count": len(only_video),
         "label_mismatch_count": len(label_mismatch),
         "split_mismatch_count": len(split_mismatch),
+        "session_mismatch_count": len(session_mismatch),
+        "source_mismatch_count": len(source_mismatch),
         "errors": errors,
     }
     if report:

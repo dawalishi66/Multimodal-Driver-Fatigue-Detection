@@ -22,11 +22,17 @@ SIX_CLASS_TASK_TO_ID: dict[str, int] = {
 }
 SIX_CLASS_ID_TO_NAME: dict[int, str] = dict(enumerate(SIX_CLASS_NAMES))
 
-AUDIO_LABEL_SCHEME_NAME = "dcpt_audio_6c_v1"
+# Both modalities share ONE 6c label scheme and ONE subject split so the metadata
+# they emit is byte-identical on label_scheme / split_version. 陈星宇 initially
+# froze these under the ``dcpt_video_*`` / ``..._provisional`` names; the audio
+# side mirrors them verbatim (dropping its earlier ``_audio_mirror`` suffix) so a
+# downstream fusion reader sees the same contract on both sides. If the lead
+# later picks a modality-neutral name, change both constants together.
+AUDIO_LABEL_SCHEME_NAME = "dcpt_video_6c_v1"
 VIDEO_LABEL_SCHEME_NAME = "dcpt_video_6c_v1"
 # Subject split reused verbatim from the video module (24/8/8, seed 2026,
 # provisional until the project lead freezes an official manifest).
-AUDIO_SPLIT_VERSION = "dcpt_subject_24_8_8_seed2026_v1_provisional_audio_mirror"
+AUDIO_SPLIT_VERSION = "dcpt_subject_24_8_8_seed2026_v1_provisional"
 
 
 def is_six_class_task(task_code: int) -> bool:

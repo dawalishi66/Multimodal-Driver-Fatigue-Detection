@@ -37,6 +37,9 @@ from driver_state.schemas import FEATURE_DTYPES
 from driver_state.validation.metadata import covered_seconds
 
 SUBJECT_RE = re.compile(r"P(?:0[1-9]|[1-3][0-9]|40)")
+# Fusion alignment: session_id must mirror the distraction-video module, i.e.
+# P<subject>_<date>_<HHMM>_<SS> (e.g. P01_20231111_0931_43).
+SESSION_ID_RE = re.compile(r"P\d{2}_\d{8}_\d{4}_\d{2}")
 MAX_RATIO_TOL = 1e-6
 
 
@@ -153,6 +156,20 @@ def validate_audio_6c(
                           "extractor_name", "extractor_version"):
                 if not row[field] or row[field].lower() in ("latest", "to_be_filled"):
                     raise ValueError(f"{field} must be nonempty and versioned where applicable")
+            if not SESSION_ID_RE.fullmatch(row["session_id"]):
+                raise ValueError(
+                    "session_id must mirror the video module: P<subject>_<date>_<HHMM>_<SS>")
+            sources = (json.loads(row["source_file"])
+                       if row["source_file"].startswith("[") else [row["source_file"]])
+            if not isinstance(sources, list) or not sources \
+                    or any(not isinstance(s, str) or not s for s in sources):
+                raise ValueError("source_file must be a relative resource or a JSON list of resources")
+            for source in sources:
+                candidate = source.replace("\\", "/")
+                if not candidate or Path(candidate).is_absolute() or ".." in candidate.split("/"):
+                    raise ValueError("source_file entries must be nonempty relative resource paths")
+                if Path(candidate).name.rsplit(".", 1)[0] != row["sample_id"]:
+                    raise ValueError("source_file basename (minus extension) must equal sample_id")
             if row["sample_id"] in seen_ids:
                 error("DUPLICATE_SAMPLE_ID", "sample_id is repeated", row_number)
             seen_ids.add(row["sample_id"])

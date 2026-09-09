@@ -27,6 +27,7 @@ from driver_state.preprocessing.distraction_audio.fusion_labels import (
     load_subject_splits,
     six_class_label,
 )
+from driver_state.preprocessing.distraction_audio.naming import parse_clip_filename
 from driver_state.schemas import COMMON_METADATA_FIELDS
 
 # Mirror of distraction_video/metadata/video_windows_10s_v1.csv column order.
@@ -89,20 +90,29 @@ def build_6c_rows(
             mask = ""
             shape = ""
             error = ERROR_NO_FEATURES
+        # session_id must be byte-identical to the distraction-video module so a
+        # later fusion join works on {sample_id, subject_id, session_id}. The raw
+        # audit's session_id predates the video-aligned format, so re-derive it
+        # from the sample_id main identifier rather than trusting a stale column.
+        ref = parse_clip_filename(audit["source_file"]) or parse_clip_filename(f"{stem}.wav")
+        session_id = ref.session_id if ref is not None else audit["session_id"]
+        # source_file mirrors the video format: a single-element JSON array of
+        # relative paths (json.dumps without spaces so it round-trips cleanly).
+        source_file = json.dumps([audit["source_file"]])
         rows.append({
             "sample_id": stem,
             "modality": "audio",
             "subject_id": subject,
-            "session_id": audit["session_id"],
+            "session_id": session_id,
             "split": split,
-            "source_file": audit["source_file"],
+            "source_file": source_file,
             "window_index": "0",
             "window_start_ms": "0",
             "window_end_ms": "10000",
             "duration_ms": "10000",
             "label_class": label_class,
             "label_id": str(label_id),
-            "label_scheme": str(label_scheme.get("label_scheme", AUDIO_LABEL_SCHEME_NAME)),
+            "label_scheme": AUDIO_LABEL_SCHEME_NAME,
             "valid": valid,
             "valid_ratio": ratio,
             "mask": mask,
