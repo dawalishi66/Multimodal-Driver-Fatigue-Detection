@@ -1,0 +1,33 @@
+{
+  "config_version": "1.0.0",
+  "dataset": "UL-DD",
+  "task": "fatigue",
+  "modality": "can",
+  "source_archive": "CSV_Files.zip",
+  "labels_file": "Labels.csv",
+  "window_ms": 30000,
+  "stride_ms": 30000,
+  "parent_label_ms": 240000,
+  "feature_columns": [
+    "heading_sin",
+    "heading_cos",
+    "pitch_sin",
+    "pitch_cos",
+    "roll_sin",
+    "roll_cos",
+    "speed_mps",
+    "rpm",
+    "gear"
+  ],
+  "preprocessing": {
+    "extractor_name": "uldd_can_10hz_boxcar",
+    "extractor_version": "1.0.0",
+    "target_hz": 10.0,
+    "min_raw_coverage_ratio": 0.95,
+    "min_valid_ratio": 0.95,
+    "max_continuous_unusable_s": 1.0,
+    "max_interpolation_gap_s": 0.1,
+    "clock_jump_threshold_s": 1.0,
+    "smoke_window_count": 16
+  }
+}

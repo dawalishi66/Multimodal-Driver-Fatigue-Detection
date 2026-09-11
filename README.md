@@ -5,7 +5,7 @@
 - **疲劳检测**：UL-DD，视频 + CAN，KSS 三分类。
 - **分心检测**：DCPT，视频 + 音频，九分类。
 
-当前阶段只建设单模态基线、公共数据接口与双模态 MulT 接入条件；**不使用 MMSA，不引入文本或虚假第三模态，暂不实施轻量化**。仓库尚未包含真实数据处理结果、已训练模型或实验成绩。
+当前阶段只建设单模态基线、公共数据接口与双模态 MulT 接入条件；**不使用 MMSA，不引入文本或虚假第三模态，暂不实施轻量化**。仓库只保留不含隐私的真实数据审计摘要，不包含原始数据、完整特征、已训练模型或实验成绩。
 
 ## 固定实验口径
 
@@ -44,6 +44,10 @@ python scripts/check_repository.py
 python -m pytest
 ```
 
+CAN 基线开发需要 PyTorch 和训练辅助依赖。在已经安装适合本机的 PyTorch
+之后执行 `python -m pip install -e ".[dev,train]"`；不要仅根据
+`nvidia-smi` 显示的 CUDA 上限盲目替换已经验证可用的 PyTorch 构建。
+
 验证 metadata 的单行命令（路径需替换为实际位置）：
 
 ```bash
@@ -52,13 +56,24 @@ python -m driver_state.validation.metadata --task fatigue --metadata path/to/met
 
 验证通过返回退出码 0，否则返回 1，并输出 JSON 报告。此工具只验证已实现的结构与特征检查，不能代替真实时间同步、数据来源及 test 使用审计。
 
+UL-DD CAN 的数据范围、时钟异常策略、特征顺序和运行命令见
+[CAN 预处理 v1](docs/CAN_PREPROCESSING_V1.md)，本次只读审计结果见
+[CAN 数据审计 v1](docs/can_data_audit_v1.md)。
+
+CAN 基线的数据加载、train-only 标准化、单层 GRU、评测契约和真实数据
+非评分预检见 [CAN 基线前置准备 v1](docs/baselines/fatigue_can/README.md)。
+预检默认锁定 test，只验证 complete-8 train/val 的接口、前反向和权重重载，
+不会产生可汇报的模型成绩。
+
 ## 仓库结构
 
 ```text
 configs/           # 任务规则和本机路径示例
 docs/              # 实验摘要、接口与协作规范
 src/driver_state/  # 公共常量、schema 和验证逻辑
+src/driver_state/baselines/ # 与MulT/融合模型隔离的单模态基线
 scripts/           # 仓库级检查入口
+tools/             # 模态预处理、验证及独立基线命令行入口
 tests/             # 不依赖真实数据的合成测试
 manifests/         # 可共享的样本/划分清单说明
 artifact_index/    # 大文件版本与校验值索引，不存大文件本体

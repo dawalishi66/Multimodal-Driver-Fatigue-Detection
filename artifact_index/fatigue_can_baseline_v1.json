@@ -1,0 +1,107 @@
+{
+  "index_version": "1.1.0",
+  "task": "fatigue",
+  "modality": "can",
+  "baseline": "can_gru_baseline_v1",
+  "processed_root_reference": "Processed_CAN_v1",
+  "latest_preflight": {
+    "run_id": "can_preflight_gru_v1_20260908T093232Z",
+    "relative_path": "baselines/fatigue_can/gru_v1/preflight/can_preflight_gru_v1_20260908T093232Z",
+    "status": "PASS",
+    "formal_result": false,
+    "test_manifest_accessed": false,
+    "files": [
+      {
+        "name": "environment.txt",
+        "size_bytes": 519,
+        "sha256": "9745b7674f57904800026ff0f1861a1af05c57acec373947b22df4b3f3793d62"
+      },
+      {
+        "name": "normalizer.json",
+        "size_bytes": 1010,
+        "sha256": "a85c181d238e650f2acc4802e9c41f61b6654c39bef5c1d3583285764e6a0f7e"
+      },
+      {
+        "name": "preflight_report.json",
+        "size_bytes": 2659,
+        "sha256": "ecebe1c77d127244ecaa6c9a4cc01080a49e98f42d87307f8e6c482f4c280cdf"
+      },
+      {
+        "name": "resolved_config.json",
+        "size_bytes": 3103,
+        "sha256": "0af4b06e25a85499c840eea87d4c020084c30fb1691bf38ea6c8adda025e453e"
+      },
+      {
+        "name": "run_manifest.json",
+        "size_bytes": 1492,
+        "sha256": "6e804e55f9995541fe434c953e67c4ca4da092251bedc94a6f6e58e628fa66b9"
+      },
+      {
+        "name": "SMOKE_ONLY_DO_NOT_USE.pt",
+        "size_bytes": 106265,
+        "sha256": "758a0af79a9750f93ad99b506ea8e4b39ab3e38d5061b8316643d5e7ce84557c"
+      }
+    ]
+  },
+  "latest_train_val_development": {
+    "experiment_id": "can_gru_v1_trainval_20260908T100437Z",
+    "relative_path": "baselines/fatigue_can/gru_v1/runs/can_gru_v1_trainval_20260908T100437Z",
+    "status": "DEVELOPMENT_TRAIN_VAL_COMPLETE",
+    "formal_result": false,
+    "test_manifest_accessed": false,
+    "cohort": "can_single_modality_complete8_v1",
+    "cohort_limitation": "not_yet_the_video_can_paired_fair_comparison_cohort",
+    "code_commit": "0f9367383fee08f89aa2747ea1d50bc4ae0c177b",
+    "config_version": "1.1.0-train-val",
+    "config_sha256": "26510cc009717d580cfcb4f88ba191dfd44c2fec85027d3eb740ca35763e4c5e",
+    "seeds": [11, 22, 33],
+    "validation_parent_macro_f1_mean": 0.35798779765508887,
+    "validation_parent_macro_f1_sample_std_ddof_1": 0.07530341979213385,
+    "files": [
+      {
+        "path": "experiment_manifest.json",
+        "size_bytes": 7953,
+        "sha256": "f7225665eb37e2effc622a3d17568a8f4368edbf8627d12c9c3d70b5c6d502a2"
+      },
+      {
+        "path": "seed_summary.json",
+        "size_bytes": 4942,
+        "sha256": "17241d57a0d17eba968765d6e506d54314b3d7815112bebe50f3b1661c3e317b"
+      },
+      {
+        "path": "seed_summary.csv",
+        "size_bytes": 1072,
+        "sha256": "b8906deb3ea1dd3b77b01c3543e3fb7513cf7ad784a3cd2e7c49766b4ea6f235"
+      },
+      {
+        "path": "resolved_config.json",
+        "size_bytes": 3385,
+        "sha256": "3a7bea4a310eef363f46a5cb9dd702d8add8113f3ad3e1acc700ca07ba9c89ac"
+      },
+      {
+        "path": "environment.txt",
+        "size_bytes": 519,
+        "sha256": "056429223aa528d35bf98d0974d5792a066f0987dd2e9970798210ed1560361d"
+      },
+      {
+        "path": "seed_11/checkpoints/best.pt",
+        "size_bytes": 107353,
+        "sha256": "245e52e8c9a6b5ce574a972f47d7984dacb8fb7890c56d3803ec1073c0b2c645"
+      },
+      {
+        "path": "seed_22/checkpoints/best.pt",
+        "size_bytes": 107353,
+        "sha256": "429dde69be2e4cae414d97bcf06463a93e3c4640fff57845870243bb2fe681b8"
+      },
+      {
+        "path": "seed_33/checkpoints/best.pt",
+        "size_bytes": 107353,
+        "sha256": "f70e358612cf5dc0c641f737588787f0fa8504c3d9b263d937a22a5873785eb8"
+      }
+    ]
+  },
+  "legacy_layout": {
+    "relative_path": "preflight/can_baseline_gru_v1",
+    "status": "superseded_layout_retained_without_deletion"
+  }
+}
