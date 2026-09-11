@@ -44,6 +44,9 @@ DCPT 公共 metadata 固定名义 `[0,10000)` 毫秒，音视频不足部分不�
 
 - T、D 必须大于 0，不硬编码未知的真实特征维度。
 - time_s 是样本相对时间，严格递增且位于对应支持区间内部；support_s 在当前样本范围内。
+- UL-DD 视频 handoff v2 的原始 `time_s/support_s` 是 session 相对时间；读取时必须分别减去
+  `window_start_ms / 1000`，再以样本相对的 0–30 秒接口交给模型。CAN v1 已经是样本相对时间。
+  该转换只改变时间坐标，不改变视频特征 `x`。
 - valid_mask=True 表示 token 可用。覆盖率按 True token 的支持区间并集计算，重叠不重复计数。
 - observed_fraction 表示每个 token 的原始有效比例，范围 0–1；它与特征可用率不同，不因插值或补齐自动变成 1。
 - 所有数组有限，不含 NaN/Inf；所有 x（包括无效位置）均须有限。零不是缺失标记。
