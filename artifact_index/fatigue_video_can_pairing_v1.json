@@ -36,6 +36,11 @@
       "path": "reports/fatigue_video_can_pair_validation_v1.json",
       "bytes": 1924,
       "sha256": "eae739a8bd3dbfc497992cdff1c07145d779b828be35a1652d32bfcbb8aace28"
+    },
+    {
+      "path": "reports/fatigue_video_can_dataset_validation_v1.json",
+      "bytes": 2728,
+      "sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639"
     }
   ],
   "counts": {
@@ -44,6 +49,15 @@
     "complete8_val_windows": 328,
     "complete8_train_parents": 159,
     "complete8_val_parents": 41
+  },
+  "data_interface_validation": {
+    "status": "PASS",
+    "code_commit": "8f9ecfcece84f231e65477848847b6557db759a0",
+    "checked_feature_pairs": 1600,
+    "checked_parents": 200,
+    "video_shape": [6, 96],
+    "can_shape": [300, 9],
+    "test_manifest_accessed": false
   },
   "sync_status": "provider_documented_aligned",
   "hardware_clock_verified": false,
