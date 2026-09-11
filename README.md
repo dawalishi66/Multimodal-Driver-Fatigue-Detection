@@ -65,6 +65,10 @@ CAN 基线的数据加载、train-only 标准化、单层 GRU、评测契约和�
 预检默认锁定 test，只验证 complete-8 train/val 的接口、前反向和权重重载，
 不会产生可汇报的模型成绩。
 
+UL-DD 视频＋CAN 共同清单、时间转换、公共 Dataset 和全量 train/val 验收见
+[视频与 CAN 配对 v1](docs/FATIGUE_VIDEO_CAN_PAIRING_V1.md)。模型训练前应通过
+`make_fusion_model_inputs` 从完整 batch 生成严格的三字段模型输入。
+
 ## 仓库结构
 
 ```text

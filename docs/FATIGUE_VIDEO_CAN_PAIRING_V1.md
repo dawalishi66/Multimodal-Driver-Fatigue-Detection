@@ -61,3 +61,19 @@ python tools/build_fatigue_video_can_pairs.py `
 ```
 
 输出目录已存在时工具拒绝覆盖。重新生成新版本时应使用新的版本目录，保留旧清单和哈希。
+
+## Dataset 与验收
+
+`FatigueVideoCanDataset` 只读取 complete-8 train/val 清单，并在加载时校验
+样本、标签、父区间、特征形状、时间数组和 mask。全量哈希验收入口为：
+
+```powershell
+python tools/validate_fatigue_video_can_data.py `
+  --pair-manifest <complete8-train-val.csv> `
+  --dataset-root <UL-DD根目录> `
+  --report <验收报告.json> `
+  --code-version <Git提交>
+```
+
+验收对象为 train 1,272 窗口/159 父区间和 val 328 窗口/41 父区间。
+工具不提供 test 输入，不计算模型指标。
