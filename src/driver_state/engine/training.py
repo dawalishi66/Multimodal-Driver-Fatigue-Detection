@@ -35,4 +35,3 @@ class EarlyStoppingTracker:
     @property
     def should_stop(self) -> bool:
         return self.epochs_without_improvement >= self.patience
-
