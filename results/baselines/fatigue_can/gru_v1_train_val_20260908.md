@@ -11,8 +11,9 @@
 - 设备：NVIDIA GeForce RTX 5060 Laptop GPU
 - 状态：PASS；`formal_result=false`；`test_manifest_accessed=false`
 
-本实验只用于 CAN 单模态管线和初步模型开发。当前 cohort 不是视频+CAN 共同
-配对集合，因此不能与疲劳视频、简单融合或 MulT 结果作正式公平主对比。
+本实验运行时视频+CAN 共同清单尚未冻结，因此原运行包保守标记为不可公平对比。
+后续独立审计已证明该运行实际使用的 complete-8 train/val 集合与双模态共同集合
+完全一致，因此这些结果可作为同一 train/val 集合上的 CAN 单模态公平对照，无需重训。
 
 ## 数据与训练规则
 
@@ -51,8 +52,9 @@ Precision／Recall／F1、混淆矩阵、每名驾驶员两种 Macro-F1 口径�
 - 已从预测 CSV 独立重算窗口及父区间指标，与 `metrics.json` 一致。
 - 已核对运行包38个文件及三个 checkpoint 的 SHA-256。
 - 训练入口没有 test 清单路径，运行包没有 test 预测或 test 指标。
-- 本结果没有完成规范 G0 的视频+CAN共同集合冻结，也不是规范 G3 的正式
-  train/val/test 主实验；共同集合确定后必须用相同流程重新训练和测试。
+- 后续 G0 审计已确认共同 train/val 集合等价；审计中样本、父区间、身份/标签/时间
+  及 CAN 特征引用差异均为 0，未重训模型。
+- 本结果仍不是规范 G3 的正式 train/val/test 主实验；test 仍未解锁。
 
 外部运行包相对 `Processed_CAN_v1` 的位置：
 
@@ -61,3 +63,8 @@ baselines/fatigue_can/gru_v1/runs/can_gru_v1_trainval_20260908T100437Z
 ```
 
 文件大小和 SHA-256 见 `artifact_index/fatigue_can_baseline_v1.json`。
+共同集合等价性报告相对 `Processed_CAN_v1` 的位置：
+
+```text
+baselines/fatigue_can/gru_v1/audits/can_gru_v1_paired_cohort_equivalence_v1.json
+```

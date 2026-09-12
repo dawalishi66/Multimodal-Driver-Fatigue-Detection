@@ -8,4 +8,5 @@
 当前结果：
 
 - `baselines/fatigue_can/gru_v1_train_val_20260908.md`：UL-DD CAN-only
-  complete-8 train/val 开发实验；未访问 test，不是视频+CAN公平主对比结果。
+  complete-8 train/val 开发实验；后续审计已确认与视频+CAN共同 train/val
+  集合完全一致，可用作该集合上的单模态对照；未访问 test。

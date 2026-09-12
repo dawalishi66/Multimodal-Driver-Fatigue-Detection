@@ -1,5 +1,5 @@
 {
-  "index_version": "1.1.0",
+  "index_version": "1.2.0",
   "task": "fatigue",
   "modality": "can",
   "baseline": "can_gru_baseline_v1",
@@ -99,6 +99,24 @@
         "sha256": "f70e358612cf5dc0c641f737588787f0fa8504c3d9b263d937a22a5873785eb8"
       }
     ]
+  },
+  "paired_cohort_equivalence": {
+    "status": "PASS",
+    "equivalent_for_train_val_fair_comparison": true,
+    "can_training_was_rerun": false,
+    "test_manifest_accessed": false,
+    "audit_code_commit": "b55536dc476b2afd50ac24a16b5c39e410fc6c62",
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "relative_path": "baselines/fatigue_can/gru_v1/audits/can_gru_v1_paired_cohort_equivalence_v1.json",
+    "size_bytes": 2061,
+    "sha256": "12951bae2b54365cf418c7c80bb522f072ad4e7d61dadb96465306a4af7038ee",
+    "effective_counts": {
+      "train_windows": 1272,
+      "train_parents": 159,
+      "val_windows": 328,
+      "val_parents": 41
+    },
+    "note": "The historical run package remains immutable; this later audit resolves its conservative cohort limitation for train/val comparison only."
   },
   "legacy_layout": {
     "relative_path": "preflight/can_baseline_gru_v1",
