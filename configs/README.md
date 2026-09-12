@@ -11,3 +11,7 @@
 `fusion/fatigue_video_can/g2_preflight_v1.json` 绑定已验收的 UL-DD 视频＋CAN
 complete-8 train/validation共同集合，供真实特征G2冒烟使用。它不包含test入口，也不是
 正式训练配置。
+
+`fusion/fatigue_video_can/simple_fusion_v1_train_val.json` 与
+`fusion/fatigue_video_can/mult_v1_train_val.json` 是同一共同集合上的开发训练配置，固定
+种子、早停和评测口径。两者均不提供test数据路径，不能作为最终测试配置使用。

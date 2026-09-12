@@ -35,3 +35,26 @@ Accuracy、Macro-F1或其他性能指标，也不访问test。
 
 MulT v1 接收并校验 `time_s`，但当前位置编码仍为序列正弦位置，不使用真实时间值。
 这不妨碍基础MulT训练，但必须在报告中明确，后续真实时间编码应作为独立改进版本和消融项。
+
+## Train/validation开发入口
+
+G2通过并将代码提交后，两个模型分别使用独立冻结配置启动；入口不接受test路径：
+
+```powershell
+python tools/fusion/fatigue_video_can/train.py `
+  --dataset-root <UL-DD根目录> `
+  --pair-root <Paired_Video_CAN_v1目录> `
+  --config configs/fusion/fatigue_video_can/simple_fusion_v1_train_val.json `
+  --device cuda
+
+python tools/fusion/fatigue_video_can/train.py `
+  --dataset-root <UL-DD根目录> `
+  --pair-root <Paired_Video_CAN_v1目录> `
+  --config configs/fusion/fatigue_video_can/mult_v1_train_val.json `
+  --device cuda
+```
+
+默认按11、22、33三个随机种子训练；每轮只使用窗口级交叉熵，使用validation的240秒
+父区间Macro-F1早停和选模。输出保存在外部配对目录的
+`fusion/fatigue_video_can/<model_id>/runs/<experiment_id>/`。当前配置和入口仍属于
+train/validation开发实验，最终方案冻结前不得解锁test。
