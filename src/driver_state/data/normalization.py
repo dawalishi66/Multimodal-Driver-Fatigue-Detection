@@ -27,15 +27,18 @@ class MaskedStandardizer:
         return len(self.mean)
 
     @classmethod
-    def fit_can_dataset(
+    def fit_dataset_modality(
         cls,
         dataset: Any,
         *,
+        modality: str,
         feature_names: Sequence[str],
         variance_epsilon: float = 1e-12,
     ) -> "MaskedStandardizer":
         if getattr(dataset, "split", None) != "train":
             raise ValueError("normalization may only be fitted on the train split")
+        if not isinstance(modality, str) or not modality:
+            raise ValueError("modality must be a non-empty string")
         names = tuple(feature_names)
         if not names:
             raise ValueError("feature_names must not be empty")
@@ -43,12 +46,19 @@ class MaskedStandardizer:
         squared_sums = np.zeros(len(names), dtype=np.float64)
         valid_token_count = 0
         for index in range(len(dataset)):
-            can = dataset[index]["inputs"]["can"]
-            x = can["x"].numpy()
-            mask = can["valid_mask"].numpy()
+            inputs = dataset[index].get("inputs", {})
+            if modality not in inputs:
+                raise ValueError(f"dataset sample does not contain modality {modality!r}")
+            stream = inputs[modality]
+            x = stream["x"].numpy()
+            mask = stream["valid_mask"].numpy()
+            if x.ndim != 2 or mask.shape != x.shape[:-1] or mask.dtype != np.bool_:
+                raise ValueError(f"invalid {modality} x/valid_mask interface")
             valid = x[mask].astype(np.float64, copy=False)
             if valid.shape[1] != len(names):
-                raise ValueError("feature_names do not match the CAN feature dimension")
+                raise ValueError(
+                    f"feature_names do not match the {modality} feature dimension"
+                )
             sums += valid.sum(axis=0, dtype=np.float64)
             squared_sums += np.square(valid, dtype=np.float64).sum(
                 axis=0, dtype=np.float64
@@ -73,6 +83,23 @@ class MaskedStandardizer:
             feature_names=names,
             fitted_split="train",
             source_manifest_sha256=str(dataset.manifest_sha256),
+        )
+
+    @classmethod
+    def fit_can_dataset(
+        cls,
+        dataset: Any,
+        *,
+        feature_names: Sequence[str],
+        variance_epsilon: float = 1e-12,
+    ) -> "MaskedStandardizer":
+        """Backward-compatible CAN convenience wrapper."""
+
+        return cls.fit_dataset_modality(
+            dataset,
+            modality="can",
+            feature_names=feature_names,
+            variance_epsilon=variance_epsilon,
         )
 
     def transform_tensor(
