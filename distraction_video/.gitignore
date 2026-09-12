@@ -1,6 +1,0 @@
-configs/distraction_video_feature_v1.json
-configs/distraction_video_baseline_v1.json
-temp/
-__pycache__/
-*.pyc
-.DS_Store

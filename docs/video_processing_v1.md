@@ -10,9 +10,13 @@ provisional interface used by the video branch.
 src/driver_state/preprocessing/distraction_video/  # reusable implementation
 scripts/                                            # thin CLI wrappers
 tests/test_distraction_video_*                      # synthetic tests
-distraction_video/                                  # metadata, configs, reports
+docs/video_processing_v1.md                         # module notes
 artifact_index/video_dcpt_v1.md                     # external artifact index
 ```
+
+Video metadata, feature caches, checkpoints and reports remain in controlled
+external storage. The repository keeps only code, interfaces, validation,
+synthetic tests and small documentation.
 
 ## Naming and labels
 
