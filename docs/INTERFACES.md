@@ -62,10 +62,15 @@ python -m driver_state.validation.metadata --task fatigue --metadata path/to/met
 
 PASS **只表示已实现的结构和特征检查通过**。未覆盖真实同步、缺失候选行守恒、六个视频子窗口血缘、complete-8 cohort、跨文件同人划分、train-only 拟合记录、test 使用历史和模态专属质量限制。DCPT 尚无正式名单时只检查文件内被试隔离，并输出警告。完整验收由后续模态验证器和负责人完成。
 
-## 模型与批处理（预留接口，尚未实现）
+## 模型与批处理
 
 输入为按模态命名的字典，例如 fatigue 的 video/can；每个模态含 `x[B,T,D]`、`valid_mask[B,T]`、`time_s[B,T]`。右侧补齐 mask=False，内部缺失不能简化为长度。全无效或缺失整模态样本在主实验入口拒绝。
 
 标签为 int64 `[B]`，由训练器使用，不传入特征字典。subject、sample_id、文件名及标签只用于追溯和评测。
 
 模型返回 `{"logits": tensor[B,C]}`，疲劳 C=3、分心 C=9。公共评测接收 sample_id、label、probabilities[C]。现有非 PyTorch 基线可用适配器导出同一概率列顺序，不强制重写模型。
+
+CAN 首版已经实现 `CanWindowDataset`、mask-aware 标准化、统一 collate 和
+`driver_state.baselines.fatigue_can.CanGruBaseline`。Dataset 默认拒绝 test；只有正式配置与选择规则冻结后的
+评价入口才可显式解锁。其实现与非 CAN 模态共享上述批处理及模型输出契约，
+但不代表其他模态 Dataset 已经完成。
