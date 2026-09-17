@@ -58,3 +58,23 @@ python tools/fusion/fatigue_video_can/train.py `
 父区间Macro-F1早停和选模。输出保存在外部配对目录的
 `fusion/fatigue_video_can/<model_id>/runs/<experiment_id>/`。当前配置和入口仍属于
 train/validation开发实验，最终方案冻结前不得解锁test。
+
+## 已完成的开发运行与独立审计
+
+SimpleFusion v1 与 DualModalMulT v1 已在上述冻结共同集合上完成11、22、33三个
+种子的train/validation运行。小型结果摘要见
+`results/fusion/fatigue_video_can/train_val_20260917.md`，完整运行包仍保存在外部
+`Paired_Video_CAN_v1` 目录。
+
+可用以下入口独立核对运行包文件哈希、预测数量、概率、重算指标和test锁定状态：
+
+```powershell
+python tools/fusion/fatigue_video_can/audit_train_val.py `
+  --run-root <SimpleFusion运行包> `
+  --run-root <DualModalMulT运行包> `
+  --output <Paired_Video_CAN_v1>/reports/fatigue_video_can_train_val_audit_v1.json `
+  --code-version <当前提交SHA>
+```
+
+审计报告只写入外部产物目录。当前审计状态为PASS，且没有访问test。由于同一共同
+集合上的视频单模态基线尚未交付，这些开发结果不能冒充四模型正式公平主对比。

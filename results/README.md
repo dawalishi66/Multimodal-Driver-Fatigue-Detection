@@ -10,3 +10,6 @@
 - `baselines/fatigue_can/gru_v1_train_val_20260908.md`：UL-DD CAN-only
   complete-8 train/val 开发实验；后续审计已确认与视频+CAN共同 train/val
   集合完全一致，可用作该集合上的单模态对照；未访问 test。
+- `fusion/fatigue_video_can/train_val_20260917.md`：同一冻结共同集合上的
+  SimpleFusion 与 DualModalMulT 三种子 train/val 开发实验；运行包和预测已独立
+  重算验收，未访问 test，且尚缺同集合视频单模态基线。
