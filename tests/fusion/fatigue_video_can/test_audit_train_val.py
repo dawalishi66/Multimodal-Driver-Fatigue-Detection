@@ -118,7 +118,7 @@ def test_audit_run_recomputes_predictions_and_hashes(tmp_path: Path):
 def test_audit_run_rejects_artifact_hash_drift(tmp_path: Path):
     root = _build_run(tmp_path / "run")
     path = root / "seed_11" / "predictions" / "val_windows.csv"
-    original = path.read_text(encoding="utf-8")
-    path.write_text(original.replace("sample_000", "sample_999", 1), encoding="utf-8")
+    original = path.read_bytes()
+    path.write_bytes(original.replace(b"sample_000", b"sample_999", 1))
     with pytest.raises(ValueError, match="hash mismatch"):
         audit_run(root)
