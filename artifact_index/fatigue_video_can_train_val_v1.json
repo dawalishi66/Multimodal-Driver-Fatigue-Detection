@@ -1,0 +1,81 @@
+{
+  "index_version": "1.0.0",
+  "task": "fatigue",
+  "modalities": ["video", "can"],
+  "artifact_type": "train_val_development_runs",
+  "owner": "李坤洋",
+  "pair_root_reference": "Paired_Video_CAN_v1",
+  "cohort": "fatigue_video_can_complete8_train_val_v1",
+  "status": "PASS",
+  "formal_result": false,
+  "test_manifest_accessed": false,
+  "training_code_commit": "437ded4782357d1781d0f7f9b0974c262cc3f324",
+  "audit_code_commit": "b4e5b303cd33aa09fb0c56ce7619782185f051d8",
+  "frozen_inputs": {
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "train_windows": 1272,
+    "train_parents": 159,
+    "val_windows": 328,
+    "val_parents": 41,
+    "video_shape": [6, 96],
+    "can_shape": [300, 9]
+  },
+  "runs": [
+    {
+      "model_id": "simple_fusion_v1",
+      "experiment_id": "fatigue_video_can_simple_fusion_v1_trainval_20260917T082125Z",
+      "relative_path": "fusion/fatigue_video_can/simple_fusion_v1/runs/fatigue_video_can_simple_fusion_v1_trainval_20260917T082125Z",
+      "config_sha256": "cfef2cc34b3788b7a0174b895e78511e08aeef8a678cded8d615ff9d5c7382d8",
+      "seeds": [11, 22, 33],
+      "file_count": 42,
+      "total_bytes": 610295,
+      "experiment_manifest_sha256": "acd68b0b63014ffd81dc553a6259b193dbb5272d1696d80745ad54de3a4f1772",
+      "seed_summary_sha256": "0f5e5fede0bfffb965194fd85174b591640fcf501b9e42685e33c0a94b3ba450",
+      "validation_parent_macro_f1_mean": 0.39509058842392175,
+      "validation_parent_macro_f1_sample_std_ddof_1": 0.044993520405691385,
+      "validation_parent_balanced_accuracy_mean": 0.43101343101343104,
+      "validation_parent_accuracy_mean": 0.43902439024390244,
+      "validation_parent_class2_recall_mean": 0.10256410256410257
+    },
+    {
+      "model_id": "dual_modal_mult_v1",
+      "experiment_id": "fatigue_video_can_dual_modal_mult_v1_trainval_20260917T082235Z",
+      "relative_path": "fusion/fatigue_video_can/dual_modal_mult_v1/runs/fatigue_video_can_dual_modal_mult_v1_trainval_20260917T082235Z",
+      "config_sha256": "20858a9b52029b5fda4b12d532d10b04ed183d506bed255a7feb3f7b06fe893d",
+      "seeds": [11, 22, 33],
+      "file_count": 42,
+      "total_bytes": 3486982,
+      "experiment_manifest_sha256": "94ab1b6c81322fe304a7d3512748dcb8f8ed4bcce3e3eda6de9ec505ca90fb76",
+      "seed_summary_sha256": "93dd8a847a6d4d10219dd1fdd5c6681179aaadd2b7a8bc416fdcd14b6cc9ef04",
+      "validation_parent_macro_f1_mean": 0.402991822991823,
+      "validation_parent_macro_f1_sample_std_ddof_1": 0.05613810747171541,
+      "validation_parent_balanced_accuracy_mean": 0.43894993894993894,
+      "validation_parent_accuracy_mean": 0.4471544715447155,
+      "validation_parent_class2_recall_mean": 0.10256410256410257
+    }
+  ],
+  "independent_audit": {
+    "relative_path": "reports/fatigue_video_can_train_val_audit_v1.json",
+    "size_bytes": 9820,
+    "sha256": "b9fe3076c17c8de708d91453c41b0dc70fb0c40c4f3fffca03fb8c49437716c5",
+    "verified_prediction_counts_per_seed": {
+      "val_windows": 328,
+      "val_parents": 41
+    },
+    "result": "PASS"
+  },
+  "fair_train_val_comparator": {
+    "model_id": "can_gru_baseline_v1",
+    "validation_parent_macro_f1_mean": 0.35798779765508887,
+    "validation_parent_macro_f1_sample_std_ddof_1": 0.07530341979213385,
+    "cohort_equivalence_status": "PASS"
+  },
+  "limitations": [
+    "These are development train/validation results, not formal test results.",
+    "A same-cohort video-only baseline is still missing, so the four-model fair comparison is incomplete.",
+    "DualModalMulT v1 validates time_s but uses sequence positions rather than real-time encoding.",
+    "The observed MulT versus SimpleFusion mean difference is too small to claim superiority.",
+    "Checkpoints, predictions, and full run packages remain outside Git."
+  ]
+}
+

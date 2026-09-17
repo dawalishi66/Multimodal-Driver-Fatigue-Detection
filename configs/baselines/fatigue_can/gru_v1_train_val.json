@@ -1,0 +1,103 @@
+{
+  "config_version": "1.1.0-train-val",
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "status": "development_train_val_not_formal_result",
+  "task": "fatigue",
+  "dataset": "UL-DD",
+  "modality": "can",
+  "label_scheme": "uldd_kss_4_7_v1",
+  "num_classes": 3,
+  "classes": ["low", "medium", "high"],
+  "data": {
+    "feature_version": "uldd_can_10hz_boxcar_1.0.0",
+    "split_version": "can_split_manifest_v1",
+    "cohort": "can_single_modality_complete8_v1",
+    "cohort_status": "not_yet_the_video_can_paired_fair_comparison_cohort",
+    "train_windows": "manifests/can_train_windows_v1.csv",
+    "train_parents": "manifests/can_train_parents_240s_v1.csv",
+    "val_windows": "manifests/can_val_windows_v1.csv",
+    "val_parents": "manifests/can_val_parents_240s_v1.csv",
+    "split_manifest": "manifests/can_split_manifest_v1.json",
+    "complete_parent_policy": "exactly_8_valid_30s_windows",
+    "expected_counts": {
+      "train_windows": 1272,
+      "train_parents": 159,
+      "train_subjects": 10,
+      "train_sessions": 18,
+      "val_windows": 328,
+      "val_parents": 41,
+      "val_subjects": 3,
+      "val_sessions": 5
+    }
+  },
+  "input": {
+    "shape": [300, 9],
+    "target_hz": 10.0,
+    "feature_columns": [
+      "heading_sin",
+      "heading_cos",
+      "pitch_sin",
+      "pitch_cos",
+      "roll_sin",
+      "roll_cos",
+      "speed_mps",
+      "rpm",
+      "gear"
+    ],
+    "mask_semantics": "true_is_valid",
+    "time_encoding": "sequence_position",
+    "normalization": {
+      "name": "masked_zscore_v1",
+      "fit_split": "train",
+      "fit_scope": "valid_tokens_only",
+      "features": "all_9",
+      "zero_variance_scale": 1.0,
+      "invalid_value_after_transform": 0.0
+    }
+  },
+  "model": {
+    "name": "can_gru_baseline_v1",
+    "projection_dim": 64,
+    "hidden_dim": 64,
+    "gru_layers": 1,
+    "dropout": 0.2,
+    "output": "raw_logits_and_classifier_input_embedding"
+  },
+  "training": {
+    "loss": "CrossEntropyLoss",
+    "class_imbalance_strategy": "none_in_v1_default",
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "physical_batch_size": 32,
+    "effective_batch_size": 32,
+    "gradient_accumulation_steps": 1,
+    "gradient_clipping": "none",
+    "max_epochs": 100,
+    "early_stopping_patience": 15,
+    "selection_metric": "val_parent_macro_f1",
+    "selection_tie_break": "earlier_epoch",
+    "seeds": [11, 22, 33],
+    "automatic_mixed_precision": false,
+    "scheduler": "none"
+  },
+  "evaluation": {
+    "primary_unit": "parent_240s",
+    "primary_metric": "macro_f1_fixed_classes",
+    "aggregation": "mean_of_8_window_probability_vectors",
+    "secondary_unit": "window_30s",
+    "fixed_class_ids": [0, 1, 2],
+    "zero_division": 0,
+    "majority_class_source": "train_labels_only",
+    "test_access": false
+  },
+  "execution": {
+    "num_workers": 0,
+    "cache_features_in_memory": true,
+    "verify_split_manifest_hashes": true,
+    "verify_each_feature_hash_once": true,
+    "require_clean_git": true,
+    "continue_after_seed_11_only_if_gate_passes": true
+  }
+}

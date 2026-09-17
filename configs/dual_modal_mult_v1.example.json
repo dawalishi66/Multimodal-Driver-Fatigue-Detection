@@ -1,0 +1,68 @@
+{
+  "template_kind": "model_config",
+  "template_status": "example",
+  "formal_experiment_config_frozen": false,
+  "real_feature_verification": "required_before_runtime",
+  "model_name": "DualModalMulT",
+  "model_version": "v1",
+  "task_profiles": {
+    "fatigue": {
+      "dataset": "UL-DD",
+      "modalities": ["video", "can"],
+      "num_classes": 3,
+      "input_dims_source": "verified_feature_manifest",
+      "constructor": {
+        "d_model": 30,
+        "num_heads": 5,
+        "cross_layers": 5,
+        "memory_layers": 5,
+        "dropout": 0.0,
+        "enable_a_from_b": true,
+        "enable_b_from_a": true,
+        "causal_attention": false
+      },
+      "position_encoding": "sequence_sinusoidal",
+      "real_time_encoding": false,
+      "parameter_status": "v0.2_first_version_default"
+    },
+    "distraction": {
+      "dataset": "DCPT",
+      "modalities": ["video", "audio"],
+      "num_classes": 9,
+      "input_dims_source": "verified_feature_manifest",
+      "constructor": {
+        "d_model": 30,
+        "num_heads": 5,
+        "cross_layers": 5,
+        "memory_layers": 5,
+        "dropout": 0.0,
+        "enable_a_from_b": true,
+        "enable_b_from_a": true,
+        "causal_attention": false
+      },
+      "position_encoding": "sequence_sinusoidal",
+      "real_time_encoding": false,
+      "parameter_status": "v0.2_first_version_default"
+    }
+  },
+  "resolution": {
+    "select_exactly_one_task_profile": true,
+    "resolved_input_dims_are_supplied_by_caller": true,
+    "resolved_input_dims_shape": {
+      "fatigue": {
+        "video": "Dv",
+        "can": "Dc"
+      },
+      "distraction": {
+        "video": "Dv",
+        "audio": "Da"
+      }
+    }
+  },
+  "notes": [
+    "This is an example/template, not a formal experiment configuration.",
+    "causal_attention is explicitly false because causal attention is rejected by the first-version constructor contract.",
+    "time_s remains an input contract field, but real time values do not generate the first-version positional encoding.",
+    "The symbolic Dv, Dc, and Da values must be resolved from a verified feature manifest before constructing the model."
+  ]
+}

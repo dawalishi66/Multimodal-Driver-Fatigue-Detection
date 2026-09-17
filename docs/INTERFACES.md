@@ -44,6 +44,9 @@ DCPT 公共 metadata 固定名义 `[0,10000)` 毫秒，音视频不足部分不�
 
 - T、D 必须大于 0，不硬编码未知的真实特征维度。
 - time_s 是样本相对时间，严格递增且位于对应支持区间内部；support_s 在当前样本范围内。
+- UL-DD 视频 handoff v2 的原始 `time_s/support_s` 是 session 相对时间；读取时必须分别减去
+  `window_start_ms / 1000`，再以样本相对的 0–30 秒接口交给模型。CAN v1 已经是样本相对时间。
+  该转换只改变时间坐标，不改变视频特征 `x`。
 - valid_mask=True 表示 token 可用。覆盖率按 True token 的支持区间并集计算，重叠不重复计数。
 - observed_fraction 表示每个 token 的原始有效比例，范围 0–1；它与特征可用率不同，不因插值或补齐自动变成 1。
 - 所有数组有限，不含 NaN/Inf；所有 x（包括无效位置）均须有限。零不是缺失标记。
@@ -62,10 +65,23 @@ python -m driver_state.validation.metadata --task fatigue --metadata path/to/met
 
 PASS **只表示已实现的结构和特征检查通过**。未覆盖真实同步、缺失候选行守恒、六个视频子窗口血缘、complete-8 cohort、跨文件同人划分、train-only 拟合记录、test 使用历史和模态专属质量限制。DCPT 尚无正式名单时只检查文件内被试隔离，并输出警告。完整验收由后续模态验证器和负责人完成。
 
-## 模型与批处理（预留接口，尚未实现）
+## 模型与批处理
 
 输入为按模态命名的字典，例如 fatigue 的 video/can；每个模态含 `x[B,T,D]`、`valid_mask[B,T]`、`time_s[B,T]`。右侧补齐 mask=False，内部缺失不能简化为长度。全无效或缺失整模态样本在主实验入口拒绝。
 
 标签为 int64 `[B]`，由训练器使用，不传入特征字典。subject、sample_id、文件名及标签只用于追溯和评测。
 
 模型返回 `{"logits": tensor[B,C]}`，疲劳 C=3、分心 C=9。公共评测接收 sample_id、label、probabilities[C]。现有非 PyTorch 基线可用适配器导出同一概率列顺序，不强制重写模型。
+
+CAN 首版已经实现 `CanWindowDataset`、mask-aware 标准化、统一 collate 和
+`driver_state.baselines.fatigue_can.CanGruBaseline`。`FatigueVideoCanDataset` 读取冻结的
+complete-8 共同清单，输出视频 `[6,96]` 与 CAN `[300,9]`。视频原始的 session
+相对时间在 Dataset 边界转为 30 秒样本相对时间，CAN 时间不变。
+
+`collate_fatigue_video_can_batch` 为两个模态独立右侧补齐，并在 batch 中保留
+`x/time_s/valid_mask/support_s/observed_fraction`。调用模型前必须使用
+`make_fusion_model_inputs(batch)`，它只向 Simple Fusion 或 MulT 交付
+`x/valid_mask/time_s`，不将标签、身份或审计数组传入模型。
+
+两个 Dataset 默认拒绝 test；只有正式配置与选择规则冻结后的评价入口
+才可显式解锁。
