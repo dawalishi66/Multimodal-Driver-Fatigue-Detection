@@ -12,7 +12,11 @@ import pytest
 from driver_state.preprocessing.distraction_audio.build_audio_6c_metadata import (
     AUDIO_6C_CSV_FIELDS,
     ERROR_NO_FEATURES,
+    ERROR_FEATURE_FILE_INVALID,
+    ERROR_FEATURE_INDEX_NOT_OK,
+    FEATURE_VERSION,
     build_6c_rows,
+    load_feature_index,
 )
 from driver_state.preprocessing.distraction_audio.check_fusion_pairs import check_fusion_pairs
 from driver_state.preprocessing.distraction_audio.fusion_labels import (
@@ -126,7 +130,8 @@ def _feature_index(tmp: Path) -> Path:
         stem = _stem(task, subject, session)
         lines.append(json.dumps({
             "sample_id": stem, "modality": "audio",
-            "path": f"audio_features_v1/{stem}.npz", "status": "ok"}))
+            "path": f"audio_features_v1/{stem}.npz", "status": "ok",
+            "feature_version": FEATURE_VERSION}))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -147,6 +152,15 @@ def test_load_scheme_and_splits(tmp_path: Path) -> None:
     assert splits == SPLIT_MAP
 
 
+def test_load_scheme_rejects_missing_name(tmp_path: Path) -> None:
+    path = _write_scheme(tmp_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["label_scheme"] = "dcpt_audio_6c_old"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="label_scheme"):
+        load_label_scheme(path)
+
+
 def test_builder_core(tmp_path: Path) -> None:
     scheme = json.loads(_write_scheme(tmp_path).read_text(encoding="utf-8"))
     splits = load_subject_splits(_write_splits(tmp_path))
@@ -165,6 +179,86 @@ def test_builder_core(tmp_path: Path) -> None:
         assert r["split"] == SPLIT_MAP[r["subject_id"]]
         assert r["valid"] == "false"
         assert r["error"] == ERROR_NO_FEATURES
+
+
+def test_builder_marks_feature_rows_valid(tmp_path: Path) -> None:
+    scheme = json.loads(_write_scheme(tmp_path).read_text(encoding="utf-8"))
+    splits = load_subject_splits(_write_splits(tmp_path))
+    feature_root = tmp_path / "processed"
+    for task, subject, session in CLIPS:
+        _feature_npz(feature_root, _stem(task, subject, session))
+    index = load_feature_index(_feature_index(tmp_path))
+    rows = build_6c_rows(
+        _audit_rows(), scheme, splits, index, feature_root=feature_root)
+    assert all(row["valid"] == "true" for row in rows)
+    assert all(row["valid_ratio"] == "1.0" for row in rows)
+    assert all(row["feature_shape"] == "[5,8]" for row in rows)
+    assert all(row["feature_dtype"] == "float32" for row in rows)
+    assert all(row["error"] == "" for row in rows)
+
+
+def test_builder_does_not_override_qc_error(tmp_path: Path) -> None:
+    scheme = json.loads(_write_scheme(tmp_path).read_text(encoding="utf-8"))
+    splits = load_subject_splits(_write_splits(tmp_path))
+    feature_root = tmp_path / "processed"
+    audit_rows = _audit_rows()
+    for task, subject, session in CLIPS:
+        _feature_npz(feature_root, _stem(task, subject, session))
+    audit_rows[0]["error"] = "SAMPLE_RATE_DEVIATION"
+    index = load_feature_index(_feature_index(tmp_path))
+    rows = build_6c_rows(
+        audit_rows, scheme, splits, index, feature_root=feature_root)
+    assert rows[0]["valid"] == "false"
+    assert rows[0]["error"] == "SAMPLE_RATE_DEVIATION"
+    assert rows[0]["feature_path"] == ""
+
+
+def test_builder_marks_non_ok_feature_index_invalid(tmp_path: Path) -> None:
+    scheme = json.loads(_write_scheme(tmp_path).read_text(encoding="utf-8"))
+    splits = load_subject_splits(_write_splits(tmp_path))
+    index_path = _feature_index(tmp_path)
+    records = [json.loads(line) for line in index_path.read_text(encoding="utf-8").splitlines()]
+    records[0]["status"] = "failed"
+    index_path.write_text(
+        "\n".join(json.dumps(record) for record in records) + "\n", encoding="utf-8")
+    rows = build_6c_rows(
+        _audit_rows(), scheme, splits, load_feature_index(index_path),
+        feature_root=tmp_path / "processed")
+    assert rows[0]["valid"] == "false"
+    assert rows[0]["error"] == ERROR_FEATURE_INDEX_NOT_OK
+
+
+def test_builder_marks_corrupt_feature_invalid(tmp_path: Path) -> None:
+    scheme = json.loads(_write_scheme(tmp_path).read_text(encoding="utf-8"))
+    splits = load_subject_splits(_write_splits(tmp_path))
+    feature_root = tmp_path / "processed"
+    for task, subject, session in CLIPS:
+        _feature_npz(feature_root, _stem(task, subject, session))
+    first_stem = _stem(*CLIPS[0])
+    (feature_root / "audio_features_v1" / f"{first_stem}.npz").write_bytes(b"not npz")
+    rows = build_6c_rows(
+        _audit_rows(), scheme, splits, load_feature_index(_feature_index(tmp_path)),
+        feature_root=feature_root)
+    assert rows[0]["valid"] == "false"
+    assert rows[0]["error"] == ERROR_FEATURE_FILE_INVALID
+
+
+def test_feature_index_rejects_duplicate_sample(tmp_path: Path) -> None:
+    index_path = _feature_index(tmp_path)
+    first_line = index_path.read_text(encoding="utf-8").splitlines()[0]
+    index_path.write_text(first_line + "\n" + first_line + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate sample_id"):
+        load_feature_index(index_path)
+
+
+def test_feature_index_rejects_windows_absolute_path(tmp_path: Path) -> None:
+    index_path = _feature_index(tmp_path)
+    records = [json.loads(line) for line in index_path.read_text(encoding="utf-8").splitlines()]
+    records[0]["path"] = "C:" + "\\data\\feature.npz"
+    index_path.write_text(
+        "\n".join(json.dumps(record) for record in records) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="relative path"):
+        load_feature_index(index_path)
 
 
 def test_validate_6c_pass_with_features(tmp_path: Path) -> None:
@@ -244,7 +338,7 @@ def test_check_fusion_pairs_pass_and_fail(tmp_path: Path) -> None:
         base = {
             "sample_id": stem, "subject_id": subject, "session_id": ref.session_id,
             "split": SPLIT_MAP[subject], "label_id": str(label_id),
-            "label_class": label_class,
+            "label_class": label_class, "label_scheme": AUDIO_LABEL_SCHEME_NAME,
         }
         audio_rows.append(dict(base, modality="audio",
                                source_file=f'["First_person_view_audio/{stem}.wav"]'))
@@ -282,6 +376,32 @@ def test_check_fusion_pairs_pass_and_fail(tmp_path: Path) -> None:
                                  video_csv=_write_csv_tmp(tmp_path, "video4.csv", bad_src_rows))
     assert bad_src["status"] == "FAIL"
     assert bad_src["source_mismatch_count"] >= 1
+
+    # Empty/omitted label_scheme must not bypass the contract.
+    bad_scheme_rows = [dict(r) for r in video_rows]
+    bad_scheme_rows[0]["label_scheme"] = ""
+    bad_scheme = check_fusion_pairs(
+        audio_csv=_write_csv_tmp(tmp_path, "audio.csv", audio_rows),
+        video_csv=_write_csv_tmp(tmp_path, "video5.csv", bad_scheme_rows))
+    assert bad_scheme["status"] == "FAIL"
+    assert bad_scheme["label_scheme_mismatch_count"] == 1
+
+    # Duplicate sample IDs are rejected instead of silently overwriting.
+    duplicate_rows = audio_rows + [dict(audio_rows[0])]
+    duplicate = check_fusion_pairs(
+        audio_csv=_write_csv_tmp(tmp_path, "audio_duplicate.csv", duplicate_rows),
+        video_csv=_write_csv_tmp(tmp_path, "video.csv", video_rows))
+    assert duplicate["status"] == "FAIL"
+    assert duplicate["audio_duplicate_sample_ids"] == [stems[0]]
+
+    # An empty session_id is an alignment failure, not a skipped comparison.
+    empty_session_rows = [dict(r) for r in video_rows]
+    empty_session_rows[0]["session_id"] = ""
+    empty_session = check_fusion_pairs(
+        audio_csv=_write_csv_tmp(tmp_path, "audio.csv", audio_rows),
+        video_csv=_write_csv_tmp(tmp_path, "video6.csv", empty_session_rows))
+    assert empty_session["status"] == "FAIL"
+    assert empty_session["session_mismatch_count"] == 1
 
 
 def _write_csv_tmp(tmp: Path, name: str, rows: list[dict[str, str]]) -> Path:

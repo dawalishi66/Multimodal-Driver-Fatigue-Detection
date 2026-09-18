@@ -31,6 +31,8 @@
 | 李坤洋 | 疲劳 CAN、公共接口与评测、完整实验、仓库管理；项目总负责人 |
 
 模块边界、交付物和 AI 协作方式见 [团队与 AI 指南](docs/TEAM_AND_AI.md)。
+五人首次配置、Issue、分支、提交、PR、审核、实验版本和 AI 提示词见
+[GitHub 仓库协作与 AI 开发总规范](docs/GITHUB_WORKFLOW.md)。
 
 ## 快速开始
 

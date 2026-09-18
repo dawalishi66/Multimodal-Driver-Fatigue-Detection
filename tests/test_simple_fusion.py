@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 
 from driver_state.models.simple_fusion import SimpleFusion
 

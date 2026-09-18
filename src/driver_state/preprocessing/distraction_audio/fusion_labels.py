@@ -51,6 +51,10 @@ def six_class_label(task_code: int) -> tuple[int, str]:
 def load_label_scheme(path: str | Path) -> dict[str, object]:
     """Load and sanity-check a 6-class label scheme JSON (audio or video)."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    scheme_name = data.get("label_scheme")
+    if scheme_name != AUDIO_LABEL_SCHEME_NAME:
+        raise ValueError(
+            f"label_scheme must be {AUDIO_LABEL_SCHEME_NAME!r}")
     names = data.get("class_names")
     mapping = data.get("task_to_class")
     if not isinstance(names, list) or names != list(SIX_CLASS_NAMES):

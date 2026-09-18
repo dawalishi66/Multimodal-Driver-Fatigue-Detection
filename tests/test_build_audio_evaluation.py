@@ -141,8 +141,18 @@ def test_evaluation_schema_fields(synth):
         "per_class", "confusion_matrix_total", "top_confusions", "per_subject",
         "majority_baseline",
     }
-    assert res["majority_baseline"] is None
     assert res["test_sample_count"] == 16
+    majority = res["majority_baseline"]
+    assert majority["majority_class_id"] == 0
+    assert majority["majority_class"] == SIX_CLASS_NAMES[0]
+    assert majority["test_sample_count"] == 16
+    assert math.isclose(majority["accuracy"], 4 / 16)
+    assert math.isclose(majority["macro_f1"], 0.4 / N_CLASSES)
+    assert math.isclose(majority["balanced_accuracy"], 1 / 6)
+    assert len(majority["per_class_f1"]) == N_CLASSES
+    assert len(majority["class_support"]) == N_CLASSES
+    assert sum(majority["class_support"]) == 16
+    assert np.asarray(majority["confusion_matrix"]).shape == (N_CLASSES, N_CLASSES)
 
 
 def test_seed_mean_matches_hand_mean(synth):
@@ -155,6 +165,19 @@ def test_seed_mean_matches_hand_mean(synth):
         res["seed_mean"]["macro_f1_std"], float(np.std(expected)))
     assert len(res["seed_summaries"]) == 3
     assert [s["seed"] for s in res["seed_summaries"]] == SEEDS
+
+
+def test_per_class_arrays_have_one_value_per_class(synth):
+    run_root, summary_path, workdirs = synth
+    res = build_audio_evaluation(summary_path, workdirs)
+    per_class = res["per_class"]
+    for key in ("precision_mean", "recall_mean", "f1_mean", "f1_std", "support"):
+        assert len(per_class[key]) == N_CLASSES
+
+    metrics = _pred_for_seed_metrics(workdirs)
+    expected_f1 = np.mean(
+        [m["test_metrics"]["per_class_f1"] for m in metrics], axis=0)
+    np.testing.assert_allclose(per_class["f1_mean"], expected_f1)
 
 
 def _pred_for_seed_metrics(workdirs: dict[int, Path]) -> list[dict]:

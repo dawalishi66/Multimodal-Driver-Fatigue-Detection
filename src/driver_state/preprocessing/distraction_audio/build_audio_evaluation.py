@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -33,12 +32,26 @@ from driver_state.preprocessing.distraction_audio.fusion_labels import (
 
 def _column_mean(values: list[list[float]]) -> list[float]:
     """Mean of each column (per-class) across a list of seed runs."""
-    return [float(np.mean(x)) for x in values]
+    if not values:
+        raise ValueError("cannot aggregate per-class metrics without seed runs")
+    array = np.asarray(values, dtype=float)
+    if array.ndim != 2 or array.shape[1] == 0:
+        raise ValueError("per-class metrics must be a non-empty rectangular matrix")
+    if not np.isfinite(array).all():
+        raise ValueError("per-class metrics must contain only finite values")
+    return np.mean(array, axis=0).tolist()
 
 
 def _column_std(values: list[list[float]]) -> list[float]:
     """Population std (ddof=0) of each column across a list of seed runs."""
-    return [float(np.std(x)) for x in values]
+    if not values:
+        raise ValueError("cannot aggregate per-class metrics without seed runs")
+    array = np.asarray(values, dtype=float)
+    if array.ndim != 2 or array.shape[1] == 0:
+        raise ValueError("per-class metrics must be a non-empty rectangular matrix")
+    if not np.isfinite(array).all():
+        raise ValueError("per-class metrics must contain only finite values")
+    return np.std(array, axis=0).tolist()
 
 
 def _per_class_f1(preds: list[int], true: list[int], n_classes: int) -> list[float]:
@@ -53,6 +66,70 @@ def _per_class_f1(preds: list[int], true: list[int], n_classes: int) -> list[flo
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
         out.append(f1)
     return out
+
+
+def _validate_seed_metrics(seed_metrics: list[dict[str, Any]], n_classes: int) -> None:
+    """Reject incomplete or internally inconsistent per-seed reports."""
+    expected_count: int | None = None
+    for metrics in seed_metrics:
+        seed = metrics.get("seed")
+        test = metrics.get("test_metrics")
+        if not isinstance(test, dict):
+            raise ValueError(f"seed {seed}: test_metrics is missing")
+        for key in (
+                "per_class_f1", "per_class_precision", "per_class_recall", "class_support"):
+            values = test.get(key)
+            if not isinstance(values, list) or len(values) != n_classes:
+                raise ValueError(
+                    f"seed {seed}: test_metrics.{key} must contain {n_classes} values")
+        support = [int(v) for v in test["class_support"]]
+        if any(v < 0 for v in support):
+            raise ValueError(f"seed {seed}: class_support must be nonnegative")
+        sample_count = sum(support)
+        if expected_count is None:
+            expected_count = sample_count
+        elif sample_count != expected_count:
+            raise ValueError(
+                f"seed {seed}: test sample count {sample_count} does not match {expected_count}")
+        confusion = np.asarray(test.get("confusion_matrix"), dtype=int)
+        if confusion.shape != (n_classes, n_classes):
+            raise ValueError(
+                f"seed {seed}: confusion_matrix must have shape [{n_classes}, {n_classes}]")
+        if confusion.sum(axis=1).tolist() != support:
+            raise ValueError(
+                f"seed {seed}: confusion_matrix rows do not match class_support")
+
+
+def _majority_baseline(labels: list[int], class_names: list[str]) -> dict[str, Any]:
+    """Compute a deterministic constant-majority-class baseline."""
+    n_classes = len(class_names)
+    if not labels:
+        raise ValueError("cannot compute majority baseline without test labels")
+    if any(label < 0 or label >= n_classes for label in labels):
+        raise ValueError("majority baseline received an out-of-range label")
+    support = [labels.count(c) for c in range(n_classes)]
+    majority_id = max(range(n_classes), key=lambda c: support[c])
+    predictions = [majority_id] * len(labels)
+    per_class_f1 = _per_class_f1(predictions, labels, n_classes)
+    per_class_recall = []
+    for c in range(n_classes):
+        tp = sum(1 for pred, true in zip(predictions, labels) if pred == c and true == c)
+        per_class_recall.append(tp / support[c] if support[c] else 0.0)
+    confusion = [[0] * n_classes for _ in range(n_classes)]
+    for true, pred in zip(labels, predictions):
+        confusion[true][pred] += 1
+    correct = sum(1 for label in labels if label == majority_id)
+    return {
+        "majority_class_id": majority_id,
+        "majority_class": class_names[majority_id],
+        "test_sample_count": len(labels),
+        "accuracy": correct / len(labels),
+        "macro_f1": float(np.mean(per_class_f1)),
+        "balanced_accuracy": float(np.mean(per_class_recall)),
+        "per_class_f1": per_class_f1,
+        "class_support": support,
+        "confusion_matrix": confusion,
+    }
 
 
 def build_audio_evaluation(
@@ -77,6 +154,7 @@ def build_audio_evaluation(
 
     class_names = list(SIX_CLASS_NAMES)
     n_classes = len(class_names)
+    _validate_seed_metrics(seed_metrics, n_classes)
 
     seed_summaries: list[dict[str, Any]] = []
     for metrics in seed_metrics:
@@ -223,6 +301,15 @@ def build_audio_evaluation(
         })
 
     test_sample_count = int(sum(subject_samples.values()))
+    first_seed_labels = []
+    for line in first_pred.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        first_seed_labels.append(int(json.loads(line)["label"]))
+    if len(first_seed_labels) != test_sample_count:
+        raise ValueError(
+            "first-seed prediction count does not match test_sample_count")
+    majority_baseline = _majority_baseline(first_seed_labels, class_names)
 
     result: dict[str, Any] = {
         "label_scheme": AUDIO_LABEL_SCHEME_NAME,
@@ -233,7 +320,7 @@ def build_audio_evaluation(
         "confusion_matrix_total": confusion_matrix_total,
         "top_confusions": top_confusions,
         "per_subject": per_subject,
-        "majority_baseline": None,
+        "majority_baseline": majority_baseline,
     }
     if output_path:
         out = Path(output_path)

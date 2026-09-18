@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 
 from driver_state.models.mult import DualModalMulT
 
