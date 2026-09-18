@@ -8,6 +8,7 @@ numpy/scipy implementations and never import numba.
 
 from __future__ import annotations
 
+import os
 import sys
 import types
 from pathlib import Path
@@ -56,10 +57,27 @@ def _make_librosa_stubs() -> None:
     sys.modules["librosa.util"] = util
 
 
+def _resolve_vendor_pytorch() -> Path:
+    """Resolve the PANNs source tree without committing or hard-coding a path."""
+    candidates: list[Path] = []
+    configured = os.environ.get("PANNS_VENDOR_ROOT")
+    if configured:
+        root = Path(configured).expanduser()
+        candidates.extend((root / "audioset_tagging_cnn" / "pytorch", root))
+    candidates.append(
+        Path(__file__).resolve().parent / "vendor" / "audioset_tagging_cnn" / "pytorch")
+    for candidate in candidates:
+        if (candidate / "models.py").is_file():
+            return candidate.resolve()
+    raise FileNotFoundError(
+        "PANNs vendor source not found. Set PANNS_VENDOR_ROOT to the directory "
+        "containing audioset_tagging_cnn/pytorch (or directly to that pytorch directory).")
+
+
 def load_cnn14_16k(weights_path: str | Path, device: torch.device) -> torch.nn.Module:
     """Return frozen Cnn14_16k with official weights on ``device`` (eval mode)."""
     _make_librosa_stubs()
-    vendor = Path(__file__).resolve().parent / "vendor" / "audioset_tagging_cnn" / "pytorch"
+    vendor = _resolve_vendor_pytorch()
     sys.path.insert(0, str(vendor))
     import torchlibrosa  # noqa: F401  (must import after stubs)
     from models import Cnn14_16k  # type: ignore

@@ -20,6 +20,24 @@ def _read(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def _index_rows(rows: list[dict[str, str]]) -> tuple[
+        dict[str, dict[str, str]], list[str], int]:
+    """Index rows and report duplicate or empty sample IDs."""
+    indexed: dict[str, dict[str, str]] = {}
+    duplicates: list[str] = []
+    empty = 0
+    for row in rows:
+        sample_id = row.get("sample_id", "").strip()
+        if not sample_id:
+            empty += 1
+            continue
+        if sample_id in indexed:
+            duplicates.append(sample_id)
+            continue
+        indexed[sample_id] = row
+    return indexed, sorted(set(duplicates)), empty
+
+
 def _source_basenames(value: str) -> list[str]:
     """Return the basename(s) of a source_file entry (JSON array or bare path)."""
     entries: list[str]
@@ -45,8 +63,8 @@ def check_fusion_pairs(
 ) -> dict[str, object]:
     audio_rows = _read(Path(audio_csv))
     video_rows = _read(Path(video_csv))
-    audio = {r["sample_id"]: r for r in audio_rows}
-    video = {r["sample_id"]: r for r in video_rows}
+    audio, audio_duplicates, audio_empty_ids = _index_rows(audio_rows)
+    video, video_duplicates, video_empty_ids = _index_rows(video_rows)
     audio_ids = set(audio)
     video_ids = set(video)
 
@@ -54,39 +72,57 @@ def check_fusion_pairs(
     only_video = sorted(video_ids - audio_ids)
     common = audio_ids & video_ids
     label_mismatch: list[tuple[str, str, str, str, str]] = []
+    label_scheme_mismatch: list[tuple[str, str, str]] = []
     split_mismatch: list[tuple[str, str, str, str, str]] = []
     session_mismatch: list[tuple[str, str, str]] = []
     source_mismatch: list[tuple[str, str, str]] = []
     for sample_id in sorted(common):
         a, v = audio[sample_id], video[sample_id]
+        a_scheme = a.get("label_scheme", "").strip()
+        v_scheme = v.get("label_scheme", "").strip()
+        if not a_scheme or not v_scheme or a_scheme != v_scheme:
+            label_scheme_mismatch.append((sample_id, a_scheme, v_scheme))
         if (a["label_id"], a["label_class"]) != (v["label_id"], v["label_class"]):
             label_mismatch.append((sample_id, a["label_id"], a["label_class"],
                                    v["label_id"], v["label_class"]))
         # session_id must be byte-identical across modalities for a fusion join.
-        a_session = a.get("session_id", "")
-        v_session = v.get("session_id", "")
-        if a_session and v_session and a_session != v_session:
+        a_session = a.get("session_id", "").strip()
+        v_session = v.get("session_id", "").strip()
+        if not a_session or not v_session or a_session != v_session:
             session_mismatch.append((sample_id, a_session, v_session))
         a_split = a["split"]
         # validate against each side's subject list where possible
-        if a["subject_id"] != v["subject_id"]:
+        if not a["subject_id"] or not v["subject_id"] or a["subject_id"] != v["subject_id"]:
             split_mismatch.append((sample_id, a["subject_id"], v["subject_id"], a_split, v["split"]))
         elif a_split != v["split"]:
             split_mismatch.append((sample_id, a["subject_id"], v["subject_id"], a_split, v["split"]))
         # source_file entries must share the sample_id main identifier (basename minus extension).
         audio_names = _source_basenames(a.get("source_file", ""))
         video_names = _source_basenames(v.get("source_file", ""))
-        if audio_names and video_names:
-            if set(audio_names) != set(video_names) or sample_id not in audio_names:
-                source_mismatch.append((sample_id, ",".join(audio_names), ",".join(video_names)))
+        if (not audio_names or not video_names
+                or set(audio_names) != set(video_names)
+                or sample_id not in audio_names
+                or sample_id not in video_names):
+            source_mismatch.append((sample_id, ",".join(audio_names), ",".join(video_names)))
 
     errors: list[str] = []
+    if audio_empty_ids or video_empty_ids:
+        errors.append(
+            f"empty sample_id rows: audio={audio_empty_ids} video={video_empty_ids}")
+    if audio_duplicates or video_duplicates:
+        errors.append(
+            f"duplicate sample_id rows: audio={audio_duplicates[:5]} "
+            f"video={video_duplicates[:5]}")
     if only_audio:
         errors.append(f"audio-only samples (not in video): {len(only_audio)} e.g. {only_audio[:5]}")
     if only_video:
         errors.append(f"video-only samples (not in audio): {len(only_video)} e.g. {only_video[:5]}")
     if label_mismatch:
         errors.append(f"label mismatches on common samples: {len(label_mismatch)} e.g. {label_mismatch[:5]}")
+    if label_scheme_mismatch:
+        errors.append(
+            f"label_scheme mismatches: {len(label_scheme_mismatch)} "
+            f"e.g. {label_scheme_mismatch[:5]}")
     if split_mismatch:
         errors.append(f"subject/split mismatches: {len(split_mismatch)} e.g. {split_mismatch[:5]}")
     if session_mismatch:
@@ -101,7 +137,12 @@ def check_fusion_pairs(
         "common_samples": len(common),
         "only_audio_count": len(only_audio),
         "only_video_count": len(only_video),
+        "audio_duplicate_sample_ids": audio_duplicates,
+        "video_duplicate_sample_ids": video_duplicates,
+        "audio_empty_sample_ids": audio_empty_ids,
+        "video_empty_sample_ids": video_empty_ids,
         "label_mismatch_count": len(label_mismatch),
+        "label_scheme_mismatch_count": len(label_scheme_mismatch),
         "split_mismatch_count": len(split_mismatch),
         "session_mismatch_count": len(session_mismatch),
         "source_mismatch_count": len(source_mismatch),

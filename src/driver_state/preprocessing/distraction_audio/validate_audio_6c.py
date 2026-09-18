@@ -115,10 +115,11 @@ def validate_audio_6c(
     if not math.isfinite(min_valid_ratio) or not 0 <= min_valid_ratio <= 1:
         raise ValueError("min_valid_ratio must be in [0,1]")
     label_scheme = load_label_scheme(label_scheme_path)
+    expected_label_scheme = str(label_scheme["label_scheme"])
     splits = load_subject_splits(subject_splits_path)
     report: dict[str, Any] = {
         "status": "FAIL", "scope": "structure_and_features_only_6c",
-        "schema_version": "0.2.0", "label_scheme": label_scheme.get("label_scheme"),
+        "schema_version": "0.2.0", "label_scheme": expected_label_scheme,
         "row_count": 0, "checked_feature_count": 0,
         "min_valid_ratio": min_valid_ratio, "errors": [], "warnings": [],
     }
@@ -190,6 +191,8 @@ def validate_audio_6c(
             if label_id != SIX_CLASS_TASK_TO_ID[task_key] \
                     or row["label_class"] != SIX_CLASS_ID_TO_NAME[label_id]:
                 raise ValueError("label_id/class must match the shared 6c scheme")
+            if row["label_scheme"] != expected_label_scheme:
+                raise ValueError("label_scheme must match the supplied 6c scheme")
             start = int(row["window_start_ms"]); end = int(row["window_end_ms"])
             duration = int(row["duration_ms"]); index = int(row["window_index"])
             if (start, end, duration, index) != (0, DCPT_WINDOW_MS, DCPT_WINDOW_MS, 0):

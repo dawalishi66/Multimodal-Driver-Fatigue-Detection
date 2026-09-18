@@ -14,7 +14,7 @@ import json
 import random
 import sys
 from collections import defaultdict
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import numpy as np
 import torch
@@ -22,6 +22,11 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, f1_score
+
+from driver_state.preprocessing.distraction_audio.fusion_labels import (
+    load_label_scheme,
+)
+from driver_state.schemas import FEATURE_DTYPES
 
 NUM_CLASSES = 6
 HIDDEN_DIM = 192
@@ -44,21 +49,94 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def _relative_path(value: str, root: Path) -> Path:
+    if not value:
+        raise ValueError("feature_path must be nonempty")
+    windows = PureWindowsPath(value)
+    if windows.drive or windows.root or Path(value).is_absolute():
+        raise ValueError("feature_path must be relative")
+    relative = Path(value.replace("\\", "/"))
+    if ".." in relative.parts:
+        raise ValueError("feature_path must not escape the feature root")
+    path = (root / relative).resolve()
+    if not path.is_relative_to(root.resolve()):
+        raise ValueError("feature_path escapes the feature root")
+    return path
+
+
+def load_feature_items(samples: list[dict], feature_root: Path,
+                       expected_input_dim: int | None = None) -> tuple[list[dict], int]:
+    """Load and validate feature NPZ files once for one dataset."""
+    items: list[dict] = []
+    input_dim: int | None = expected_input_dim
+    for sample in samples:
+        sample_id = sample["sample_id"]
+        path = _relative_path(sample["feature_path"], feature_root)
+        if not path.is_file():
+            raise ValueError(f"missing feature file for {sample_id}: {sample['feature_path']}")
+        try:
+            with np.load(path, allow_pickle=False) as archive:
+                missing = sorted(set(FEATURE_DTYPES) - set(archive.files))
+                extra = sorted(set(archive.files) - set(FEATURE_DTYPES))
+                if missing or extra:
+                    raise ValueError(
+                        f"feature arrays differ for {sample_id}: missing={missing} extra={extra}")
+                arrays = {name: archive[name] for name in FEATURE_DTYPES}
+        except (OSError, EOFError) as exc:
+            raise ValueError(f"cannot load feature file for {sample_id}: {path}") from exc
+        for name, dtype in FEATURE_DTYPES.items():
+            if arrays[name].dtype != np.dtype(dtype):
+                raise ValueError(
+                    f"{sample_id}: {name} dtype must be {dtype}, got {arrays[name].dtype}")
+            if not np.isfinite(arrays[name]).all():
+                raise ValueError(f"{sample_id}: {name} contains NaN or Inf")
+        x = arrays["x"]
+        mask = arrays["valid_mask"]
+        if x.ndim != 2 or min(x.shape) < 1:
+            raise ValueError(f"{sample_id}: x must have nonempty shape [T,D]")
+        expected_shapes = {
+            "time_s": (x.shape[0],),
+            "valid_mask": (x.shape[0],),
+            "support_s": (x.shape[0], 2),
+            "observed_fraction": (x.shape[0],),
+        }
+        for name, shape in expected_shapes.items():
+            if arrays[name].shape != shape:
+                raise ValueError(f"{sample_id}: {name} shape must be {shape}")
+        if not np.any(mask):
+            raise ValueError(f"{sample_id}: valid_mask has no valid token")
+        declared_shape = sample.get("feature_shape", "")
+        if declared_shape:
+            try:
+                decoded_shape = json.loads(declared_shape)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"{sample_id}: feature_shape is not valid JSON") from exc
+            if decoded_shape != list(x.shape):
+                raise ValueError(f"{sample_id}: feature_shape does not match NPZ x")
+        if sample.get("feature_dtype", "") and sample["feature_dtype"] != str(x.dtype):
+            raise ValueError(f"{sample_id}: feature_dtype does not match NPZ x")
+        if input_dim is None:
+            input_dim = int(x.shape[1])
+        elif int(x.shape[1]) != input_dim:
+            raise ValueError(
+                f"{sample_id}: feature dimension {x.shape[1]} does not match {input_dim}")
+        items.append({
+            "sample_id": sample_id,
+            "subject_id": sample["subject_id"],
+            "label": int(sample["label_id"]),
+            "x": x,
+            "valid_mask": mask,
+        })
+    if input_dim is None:
+        raise ValueError("cannot infer feature dimension from an empty dataset")
+    return items, input_dim
+
+
 class FeatureDataset(Dataset):
-    def __init__(self, samples: list[dict], feature_root: Path):
-        self.items = []
-        for s in samples:
-            path = feature_root / Path(s["feature_path"])
-            with np.load(path, allow_pickle=False) as z:
-                x = z["x"].astype(np.float32)
-                mask = z["valid_mask"].astype(bool)
-            self.items.append({
-                "sample_id": s["sample_id"],
-                "subject_id": s["subject_id"],
-                "label": int(s["label_id"]),
-                "x": x,
-                "valid_mask": mask,
-            })
+    def __init__(self, samples: list[dict], feature_root: Path,
+                 expected_input_dim: int | None = None):
+        self.items, self.input_dim = load_feature_items(
+            samples, feature_root, expected_input_dim=expected_input_dim)
 
     def __len__(self) -> int:
         return len(self.items)
@@ -96,8 +174,10 @@ class AudioGRUBaseline(nn.Module):
         masked = x * mask
         mean_pool = masked.sum(dim=1) / counts
         max_pool = (masked + (1.0 - mask) * -1e9).max(dim=1).values
-        lengths = valid_mask.sum(dim=1).long()
-        last_idx = (lengths - 1).clamp(min=0)
+        positions = torch.arange(valid_mask.shape[1], device=valid_mask.device)
+        last_idx = torch.where(valid_mask, positions, -1).max(dim=1).values
+        if torch.any(last_idx < 0):
+            raise ValueError("every sample must contain at least one valid token")
         last_pool = x[torch.arange(x.shape[0], device=x.device), last_idx]
         pooled = torch.cat([mean_pool, max_pool, last_pool], dim=-1)
         logits = self.head(self.dropout(pooled))
@@ -157,16 +237,78 @@ def load_rows(metadata_csv: Path) -> list[dict]:
         return list(csv.DictReader(stream))
 
 
+def select_valid_rows(rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Return usable rows and a traceable list of invalid metadata rows."""
+    selected: list[dict] = []
+    rejected: list[dict] = []
+    for row in rows:
+        valid_raw = row.get("valid", "").strip().lower()
+        if valid_raw not in ("true", "1"):
+            rejected.append({
+                "sample_id": row.get("sample_id", ""),
+                "error": row.get("error", "") or "INVALID_WITHOUT_ERROR",
+            })
+            continue
+        if row.get("error", "").strip():
+            raise ValueError(
+                f"{row.get('sample_id', '<unknown>')} is valid=true but carries error="
+                f"{row['error']!r}")
+        if not row.get("feature_path", "").strip():
+            raise ValueError(
+                f"{row.get('sample_id', '<unknown>')} is valid=true but has no feature_path")
+        selected.append(row)
+    if not selected:
+        raise ValueError("metadata contains no valid feature rows")
+    return selected, rejected
+
+
+def validate_training_rows(rows: list[dict], scheme: dict[str, object]) -> None:
+    """Enforce the frozen six-class scheme and unique sample IDs before training."""
+    scheme_name = str(scheme["label_scheme"])
+    class_names = list(scheme["class_names"])
+    task_to_class = dict(scheme["task_to_class"])
+    seen: set[str] = set()
+    for row in rows:
+        sample_id = row.get("sample_id", "")
+        if not sample_id or sample_id in seen:
+            raise ValueError(f"duplicate or empty sample_id in metadata: {sample_id!r}")
+        seen.add(sample_id)
+        if row.get("label_scheme", "") != scheme_name:
+            raise ValueError(f"{sample_id}: label_scheme does not match the supplied scheme")
+        if row.get("split", "") not in ("train", "val", "test"):
+            raise ValueError(f"{sample_id}: split must be train, val or test")
+        task_key = sample_id[:2]
+        if task_key not in task_to_class:
+            raise ValueError(f"{sample_id}: task prefix is outside the six-class scheme")
+        expected_id = int(task_to_class[task_key])
+        expected_class = str(class_names[expected_id])
+        if (row.get("label_id", ""), row.get("label_class", "")) != (
+                str(expected_id), expected_class):
+            raise ValueError(f"{sample_id}: label does not match the six-class scheme")
+
+
 def run_seed(seed: int, rows: list[dict], feature_root: Path, class_names: list[str],
              artifact_dir: Path, device: torch.device, config: dict) -> dict:
     set_seed(seed)
-    split_map = {r["sample_id"]: r["split"] for r in rows}
     by_split = {"train": [], "val": [], "test": []}
     for r in rows:
         by_split[r["split"]].append(r)
+    for split, split_rows in by_split.items():
+        if not split_rows:
+            raise ValueError(f"{split} split is empty after filtering valid feature rows")
+    datasets = {
+        "train": FeatureDataset(by_split["train"], feature_root),
+        "val": FeatureDataset(by_split["val"], feature_root),
+        "test": FeatureDataset(by_split["test"], feature_root),
+    }
+    input_dim = datasets["train"].input_dim
+    for split, dataset in datasets.items():
+        if dataset.input_dim != input_dim:
+            raise ValueError(
+                f"{split} feature dimension {dataset.input_dim} does not match train {input_dim}")
 
     def loader(name: str, shuffle: bool):
-        ds = FeatureDataset(by_split[name], feature_root)
+        ds = datasets[name]
         gen = torch.Generator().manual_seed(seed) if shuffle else None
         return DataLoader(ds, batch_size=BATCH_SIZE, shuffle=shuffle, collate_fn=collate,
                           generator=gen)
@@ -175,15 +317,16 @@ def run_seed(seed: int, rows: list[dict], feature_root: Path, class_names: list[
     val_loader = loader("val", False)
     test_loader = loader("test", False)
 
-    input_dim = int(rows[0].get("feature_shape", "[5, 2048]")[1:-1].split(",")[1])
     model = AudioGRUBaseline(input_dim=input_dim).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     loss_fn = nn.CrossEntropyLoss()
 
     run_dir = artifact_dir / f"seed_{seed}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "config.json").write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n",
-                                         encoding="utf-8")
+    run_config = dict(config)
+    run_config["input_dim"] = input_dim
+    (run_dir / "config.json").write_text(
+        json.dumps(run_config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     best_val = -1.0
     best_epoch = -1
@@ -258,21 +401,34 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     device = torch.device(args.device if args.device == "cuda" and torch.cuda.is_available() else "cpu")
-    scheme = json.loads(args.label_scheme.read_text(encoding="utf-8"))
+    scheme = load_label_scheme(args.label_scheme)
     class_names = list(scheme["class_names"])
     seeds = [int(s) for s in args.seeds.split(",")]
+    all_rows = load_rows(args.metadata)
+    rows, rejected_rows = select_valid_rows(all_rows)
+    if rejected_rows:
+        preview = ", ".join(
+            f"{item['sample_id']}({item['error']})" for item in rejected_rows[:5])
+        print(
+            f"excluded {len(rejected_rows)} invalid metadata rows; preview: {preview}",
+            flush=True,
+        )
+    validate_training_rows(rows, scheme)
     config = {
-        "label_scheme": scheme.get("label_scheme"),
+        "label_scheme": scheme["label_scheme"],
         "class_names": class_names,
-        "model": "AudioGRUBaseline", "input_dim": 2048, "hidden_dim": HIDDEN_DIM,
+        "model": "AudioGRUBaseline", "input_dim": None, "hidden_dim": HIDDEN_DIM,
         "dropout": DROPOUT, "pooling": POOLING, "bidirectional": BIDIRECTIONAL,
         "optimizer": "AdamW", "learning_rate": LR, "weight_decay": WEIGHT_DECAY,
         "effective_batch_size": BATCH_SIZE, "max_epochs": MAX_EPOCHS,
         "early_stopping_patience": PATIENCE, "selection_metric": "val_clip_macro_f1",
         "seeds": seeds, "device": str(device),
         "feature_version": "panns_cnn14_16k_v1",
+        "metadata_rows_total": len(all_rows),
+        "metadata_rows_used": len(rows),
+        "metadata_rows_excluded": len(rejected_rows),
+        "metadata_excluded_sample_ids": [item["sample_id"] for item in rejected_rows],
     }
-    rows = load_rows(args.metadata)
     per_seed: list[dict] = []
     for seed in seeds:
         per_seed.append(run_seed(seed, rows, args.feature_root, class_names,
@@ -280,7 +436,8 @@ def main(argv: list[str] | None = None) -> int:
     test_mf1 = [m["test_metrics"]["macro_f1"] for m in per_seed]
     test_ba = [m["test_metrics"]["balanced_accuracy"] for m in per_seed]
     test_acc = [m["test_metrics"]["accuracy"] for m in per_seed]
-    per_class = np.mean([[m["test_metrics"]["per_class_f1"]] for m in per_seed], axis=0)[0].tolist()
+    per_class = np.mean(
+        [m["test_metrics"]["per_class_f1"] for m in per_seed], axis=0).tolist()
     subjects = sorted({s for m in per_seed for s in m["per_subject_test_macro_f1"]})
     per_subject_mean = {s: float(np.mean([m["per_subject_test_macro_f1"][s] for m in per_seed]))
                         for s in subjects}
@@ -294,6 +451,8 @@ def main(argv: list[str] | None = None) -> int:
         "test_accuracy_mean": float(np.mean(test_acc)),
         "per_class_test_f1_mean": per_class,
         "per_subject_test_macro_f1_mean": per_subject_mean,
+        "metadata_rows_used": len(rows),
+        "metadata_rows_excluded": len(rejected_rows),
         "seed_results": per_seed,
     }
     args.summary_out.parent.mkdir(parents=True, exist_ok=True)
@@ -302,7 +461,8 @@ def main(argv: list[str] | None = None) -> int:
     lines = [
         "# Distraction Audio Baseline v1 Result (胡煦轩)",
         "",
-        f"- Task: DCPT distraction / audio / 6-class video-aligned set (714 clips).",
+        f"- Task: DCPT distraction / audio / 6-class video-aligned set "
+        f"({len(rows)} clips; {len(rejected_rows)} invalid rows excluded).",
         f"- Features: frozen PANNs Cnn14_16k `[5, 2048]` (feature_version panns_cnn14_16k_v1).",
         f"- Model: AudioGRUBaseline (BiGRU hidden 192, dropout 0.25, mean+max+last), "
         f"AdamW {LR}/{WEIGHT_DECAY}, batch {BATCH_SIZE}, max_epochs {MAX_EPOCHS}, "
