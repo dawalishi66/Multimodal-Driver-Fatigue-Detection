@@ -1,0 +1,62 @@
+{
+  "artifact_id": "uldd-fatigue-video-handoff-v2",
+  "artifact_type": "feature_handoff_bundle",
+  "version": "2.0.0",
+  "owner": "邓金祥",
+  "task": "fatigue",
+  "modality": "video",
+  "formal_result": false,
+  "test_manifest_accessed": false,
+  "source_code_commit": "f28ca77a228d20f9aec6fd9c05d96a8299961b91",
+  "source_contract": {
+    "human_readable": "docs/experiment_contract_v1.md",
+    "machine_readable": "config/experiment_v1.json",
+    "status": "frozen"
+  },
+  "package": {
+    "storage": "team_private_storage",
+    "retrieval": "team private channel",
+    "filename": "video_handoff_v2.zip",
+    "sha256": "00a6a2fdb5596ecfe6ed6fc688f42ad7680f509346b3e10b1ebef3de6a59b4e5",
+    "uncompressed_bytes": 10720468
+  },
+  "scope": {
+    "splits": ["train", "val"],
+    "test_windows": 0,
+    "raw_media_in_bundle": false,
+    "sessions": 24,
+    "source_5s_windows": 11460,
+    "included_5s_windows": 11454,
+    "excluded_tail_5s_windows": 6,
+    "windows_30s": 1909,
+    "train_windows_30s": 1438,
+    "val_windows_30s": 471
+  },
+  "feature_contract": {
+    "feature_version": "distilled_prefix10_r160_mean_seed20260833",
+    "x": "float32[6,96]",
+    "time_s": "float64[6]",
+    "valid_mask": "bool[6]",
+    "support_s": "float64[6,2]",
+    "observed_fraction": "float32[6]",
+    "subwindows": "six real contiguous five-second video windows",
+    "probability_reconstruction_max_abs_diff": 4.76837158203125e-7
+  },
+  "time_contract": {
+    "bundle_coordinates": "session_relative_seconds",
+    "public_batch_coordinates": "sample_relative_seconds",
+    "required_adapter": "subtract window_start_ms / 1000 from time_s and support_s before public batching"
+  },
+  "validation": {
+    "status": "PASS",
+    "checked_feature_files": 1909,
+    "feature_files_with_errors": 0,
+    "test_windows_loaded": 0
+  },
+  "limitations": [
+    "The source package alone does not prove Video/CAN synchronization.",
+    "The source video models used legacy seeds 20260831, 20260832 and 20260833 rather than project seeds 11, 22 and 33.",
+    "Legacy video scores are not a same-cohort comparator for the fatigue Video/CAN train-validation experiments.",
+    "Features and model weights remain outside Git and must be verified by SHA-256 before use."
+  ]
+}
