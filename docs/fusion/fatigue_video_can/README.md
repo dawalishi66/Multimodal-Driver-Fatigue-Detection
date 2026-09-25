@@ -38,6 +38,19 @@ MulT v1 接收并校验 `time_s`，但当前位置编码仍为序列正弦位置
 
 ## Train/validation开发入口
 
+同一训练器也支持缺失的视频单模态公平对照，并继续复用冻结配对队列：
+
+```powershell
+python tools/fusion/fatigue_video_can/train.py `
+  --dataset-root <UL-DD根目录> `
+  --pair-root <Paired_Video_CAN_v1目录> `
+  --config configs/baselines/fatigue_video/gru_v1_train_val.json `
+  --device auto
+```
+
+该配置只用 train 视频 token 拟合标准化器，且只把 `video` 流送入模型；CAN
+仅用于证明样本来自相同冻结配对队列，不参与前向计算。
+
 G2通过并将代码提交后，两个模型分别使用独立冻结配置启动；入口不接受test路径：
 
 ```powershell
