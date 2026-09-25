@@ -41,3 +41,50 @@ and full predictions must remain outside Git.
 
 For a one-seed smoke before the full run, append `--seeds 11`. Do not add a
 test manifest, test metric or test-dependent threshold/model choice.
+
+## Locked C/H/P feature handoff
+
+`tools/baselines/fatigue_video/test_features.py` prepares the public test
+feature package after the team lead provides a written unlock. It does not
+extract raw video itself: the frozen provider-side extractor first emits the
+five-array 30-second NPZ files, then this tool verifies `[6,96]`, converts
+session-relative times to sample-relative 0–30 seconds, records SHA-256, and
+revalidates the completed package.
+
+The request CSV columns are exactly:
+
+```text
+sample_id,subject_id,session_id,window_start_ms,window_end_ms,source_feature,source_time_reference
+```
+
+It must cover only and all subjects C/H/P and must contain no KSS, label,
+probability, prediction or metric field. The unlock JSON must contain:
+
+```json
+{
+  "authorized_by": "<team lead>",
+  "issued_at": "<timestamp>",
+  "scope": "test_feature_generation_and_validation_only",
+  "allow_model_evaluation": false,
+  "allow_threshold_or_model_changes": false
+}
+```
+
+After authorization, export and independently validate with:
+
+```powershell
+python tools/baselines/fatigue_video/test_features.py export `
+  --unlock <written-unlock.json> `
+  --request <test-feature-request.csv> `
+  --source-root <provider-feature-root> `
+  --output-root <new-test-handoff-directory>
+
+python tools/baselines/fatigue_video/test_features.py validate `
+  --unlock <written-unlock.json> `
+  --output-root <new-test-handoff-directory>
+```
+
+Both commands are feature-only. The report fixes `model_loaded=false`,
+`predictions_generated=false`, `metrics_evaluated=false`, and
+`thresholds_or_models_changed=false`. This task did not run these commands on
+real C/H/P video features because no written unlock was supplied.

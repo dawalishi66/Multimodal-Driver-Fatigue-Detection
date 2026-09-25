@@ -4,10 +4,16 @@ import json
 from pathlib import Path
 
 import pytest
+import numpy as np
 import torch
 
 from driver_state.baselines.fatigue_video import VideoGruBaseline
 from tools.fusion.fatigue_video_can.train import _build_model, verify_train_val_config
+from tools.baselines.fatigue_video.test_features import (
+    export_features,
+    validate_package,
+    verify_unlock,
+)
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
@@ -60,3 +66,60 @@ def test_video_gru_rejects_all_invalid_sample():
                 }
             }
         )
+
+
+def test_test_feature_handoff_is_non_scoring_and_sample_relative(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    request = tmp_path / "request.csv"
+    rows = []
+    for index, subject in enumerate(("C", "H", "P")):
+        start_ms = index * 30_000
+        starts = start_ms / 1000.0 + np.arange(6, dtype=np.float64) * 5.0
+        source_path = source / f"{subject}.npz"
+        np.savez_compressed(
+            source_path,
+            x=np.ones((6, 96), dtype=np.float32) * index,
+            time_s=starts + 2.5,
+            valid_mask=np.ones(6, dtype=np.bool_),
+            support_s=np.column_stack((starts, starts + 5.0)),
+            observed_fraction=np.ones(6, dtype=np.float32),
+        )
+        rows.append(
+            f"test_{subject},{subject},{subject}_A,{start_ms},{start_ms + 30000},"
+            f"{subject}.npz,session_relative\n"
+        )
+    request.write_text(
+        "sample_id,subject_id,session_id,window_start_ms,window_end_ms,"
+        "source_feature,source_time_reference\n" + "".join(rows),
+        encoding="utf-8",
+    )
+    output = tmp_path / "output"
+    report = export_features(request, source, output)
+
+    assert report == validate_package(output)
+    assert report["status"] == "PASS"
+    assert report["subjects"] == ["C", "H", "P"]
+    assert report["model_loaded"] is False
+    assert report["predictions_generated"] is False
+    assert report["metrics_evaluated"] is False
+    with np.load(output / "features_30s/test_P.npz", allow_pickle=False) as archive:
+        assert np.allclose(archive["support_s"][0], [0.0, 5.0])
+
+
+def test_test_feature_unlock_forbids_model_evaluation(tmp_path):
+    unlock = tmp_path / "unlock.json"
+    unlock.write_text(
+        json.dumps(
+            {
+                "authorized_by": "team lead",
+                "issued_at": "2026-09-25T00:00:00Z",
+                "scope": "test_feature_generation_and_validation_only",
+                "allow_model_evaluation": True,
+                "allow_threshold_or_model_changes": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="allow_model_evaluation"):
+        verify_unlock(unlock)

@@ -1,0 +1,62 @@
+{
+  "index_version": "1.0.0",
+  "task": "fatigue",
+  "modality": "video",
+  "baseline": "video_gru_v1",
+  "artifact_type": "train_val_development_run",
+  "owner": "邓金祥",
+  "processed_root_reference": "Paired_Video_CAN_v1",
+  "status": "PASS",
+  "formal_result": false,
+  "test_manifest_accessed": false,
+  "training_code_commit": "856bed32ac70fc56e6a7c6413ea466439e6913bb",
+  "config": {
+    "path": "configs/baselines/fatigue_video/gru_v1_train_val.json",
+    "sha256": "19063142fa32491c5f7d52334380b3776391e091c2b175dde91165fcc1eff18c"
+  },
+  "frozen_inputs": {
+    "cohort": "fatigue_video_can_complete8_train_val_v1",
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "dataset_validation_report_sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639",
+    "g2_preflight_report_sha256": "c6aceede76f5f55dd1b06b315e55c1bfe10b95c4c9afa48afe8ca75e3183728e",
+    "train_windows": 1272,
+    "train_parents": 159,
+    "val_windows": 328,
+    "val_parents": 41,
+    "video_shape": [6, 96]
+  },
+  "run": {
+    "experiment_id": "fatigue_video_video_gru_v1_trainval_20260925T024907Z",
+    "relative_path": "baselines/fatigue_video/video_gru_v1/runs/fatigue_video_video_gru_v1_trainval_20260925T024907Z",
+    "seeds": [11, 22, 33],
+    "file_count": 39,
+    "total_bytes": 792770,
+    "experiment_manifest_sha256": "f9936299768f162e57cb642db2f6265e9e101e630fc5bcc99223c7cd91fd994a",
+    "seed_summary_sha256": "f21f9be09bf12248e7f76a1fedae1b7b962e0f0a89c520841dd292dc74d1ca53",
+    "validation_window_macro_f1_mean": 0.3459884704589697,
+    "validation_window_macro_f1_sample_std_ddof_1": 0.004531890634940942,
+    "validation_parent_macro_f1_mean": 0.34595959595959597,
+    "validation_parent_macro_f1_sample_std_ddof_1": 0.0,
+    "validation_parent_balanced_accuracy_mean": 0.4047619047619048,
+    "validation_parent_accuracy_mean": 0.4146341463414634,
+    "validation_parent_class2_recall_mean": 0.0,
+    "majority_parent_macro_f1": 0.16969696969696968,
+    "checkpoint_reload_max_probability_difference": 0.0
+  },
+  "independent_audit": {
+    "relative_path": "reports/fatigue_video_train_val_audit_v1.json",
+    "size_bytes": 4968,
+    "sha256": "d154d1ee6bf7fe82faac6e9f40d15d79b7ba81df5fedd0906e0bcd3d92b6a41e",
+    "verified_prediction_counts_per_seed": {
+      "val_windows": 328,
+      "val_parents": 41
+    },
+    "result": "PASS"
+  },
+  "limitations": [
+    "These are development train/validation results, not formal test results.",
+    "All three seeds have zero KSS>=7 recall at the 240-second parent level.",
+    "The input embeddings come from the frozen legacy video extractor; this run retrains only the same-cohort GRU classifier with seeds 11, 22 and 33.",
+    "Weights, full predictions and the complete run package remain outside Git."
+  ]
+}
