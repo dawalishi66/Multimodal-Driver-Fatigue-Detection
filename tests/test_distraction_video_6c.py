@@ -121,6 +121,53 @@ def test_build_and_validate_video_6c(tmp_path: Path) -> None:
     assert report["checked_feature_count"] == 1
 
 
+def test_validate_accepts_invalid_row_with_existing_feature(tmp_path: Path) -> None:
+    scheme_path = _scheme(tmp_path)
+    splits_path = _splits(tmp_path)
+    feature_root = _feature_root(tmp_path)
+    feature_path = feature_root / "video_features_v1" / f"{SAMPLE_ID}.npz"
+    with np.load(feature_path, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    arrays["valid_mask"][-1] = False
+    arrays["observed_fraction"][-1] = 0.0
+    arrays["x"][-1] = 0.0
+    np.savez(feature_path, **arrays)
+    row = {
+        "sample_id": SAMPLE_ID,
+        "modality": "video",
+        "subject_id": "P01",
+        "session_id": SESSION_ID,
+        "split": "val",
+        "source_file": json.dumps([f"Upper_body_video_01/{SAMPLE_ID}.mp4"]),
+        "window_index": "0",
+        "window_start_ms": "0",
+        "window_end_ms": "10000",
+        "duration_ms": "10000",
+        "label_class": "No task",
+        "label_id": "0",
+        "label_scheme": VIDEO_LABEL_SCHEME_NAME,
+        "valid": "false",
+        "valid_ratio": "0.9",
+        "mask": f"video_features_v1/{SAMPLE_ID}.npz::valid_mask",
+        "feature_path": f"video_features_v1/{SAMPLE_ID}.npz",
+        "feature_shape": "[10, 8]",
+        "feature_dtype": "float32",
+        "extractor_name": "torchvision_r3d_18",
+        "extractor_version": "0.24.1_kinetics400_v1",
+        "error": "coverage_below_0.95",
+    }
+    csv_path = tmp_path / "video_invalid.csv"
+    _write_csv(csv_path, [row])
+    report = validate_video_6c(
+        csv_path,
+        label_scheme_path=scheme_path,
+        subject_splits_path=splits_path,
+        feature_root=feature_root,
+    )
+    assert report["status"] == "PASS", report["errors"]
+    assert report["checked_feature_count"] == 1
+
+
 def test_pair_check_passes_for_matching_video_and_audio(tmp_path: Path) -> None:
     video_row = {
         "sample_id": SAMPLE_ID,

@@ -221,16 +221,15 @@ def validate_video_6c(
                 raise ValueError("invalid rows must retain an explicit error")
             if valid and ratio < min_valid_ratio:
                 raise ValueError("valid row falls below the feature-coverage threshold")
-            if not row["feature_path"]:
-                if valid or ratio != 0 or row["mask"] or row["feature_shape"] or row["feature_dtype"]:
-                    raise ValueError("missing features require invalid, ratio=0 and empty descriptors")
-            else:
-                if not valid:
-                    raise ValueError("feature_path on an invalid row is not allowed")
+            if row["feature_path"]:
                 actual = _check_feature(row, root, duration / 1000)
                 report["checked_feature_count"] += 1
                 if not math.isclose(ratio, actual, rel_tol=0, abs_tol=MAX_RATIO_TOL):
                     raise ValueError("valid_ratio differs from the feature support union")
+            elif valid or ratio != 0 or row["mask"] or row["feature_shape"] or row["feature_dtype"]:
+                raise ValueError(
+                    "missing features require invalid, ratio=0 and empty descriptors"
+                )
         except (ValueError, TypeError, KeyError, OSError, EOFError) as exc:
             message = str(exc) if isinstance(exc, ValueError) else type(exc).__name__
             error("INVALID_ROW", message, row_number)

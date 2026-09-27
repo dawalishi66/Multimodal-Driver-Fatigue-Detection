@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "scope": "distraction_video_6c",
+  "schema_version": "0.2.0",
+  "label_scheme": "dcpt_video_6c_v1",
+  "row_count": 714,
+  "checked_feature_count": 714,
+  "min_valid_ratio": 0.95,
+  "errors": [],
+  "warnings": [
+    "Six-class labels and the 24/8/8 subject split remain provisional until frozen by the project lead."
+  ]
+}
