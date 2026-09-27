@@ -82,6 +82,8 @@ Split summary:
 - Effective frame-rate min/median/max: 26.742536 / 30.105351 / 30.122408
 - `observed_fraction` and `valid_mask` are retained per token.
 - Frame selection and segment support follow actual decoded timestamps in the extractor.
+- Detailed timing evidence and extractor hash:
+  `manifests/dcpt_video_6c_v1/timing_evidence_v1.json`.
 - Raw video re-decode: not executed because raw videos are absent from the current environment.
 
 ## Open Gates
