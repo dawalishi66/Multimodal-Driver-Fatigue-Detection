@@ -132,11 +132,11 @@ def test_fatigue_returns_three_class_logits_for_two_modalities():
     assert torch.isfinite(output["logits"]).all()
 
 
-def test_distraction_returns_nine_class_logits():
+def test_distraction_returns_six_class_logits():
     model = _make_model(
         modalities=("video", "audio"),
         feature_dims=(7, 13),
-        num_classes=9,
+        num_classes=6,
     )
     masks = (
         torch.tensor([[True, False, True], [True, True, False]], dtype=torch.bool),
@@ -148,7 +148,7 @@ def test_distraction_returns_nine_class_logits():
 
     output = model(_make_inputs(("video", "audio"), (7, 13), masks))
 
-    assert output["logits"].shape == (2, 9)
+    assert output["logits"].shape == (2, 6)
     assert torch.isfinite(output["logits"]).all()
 
 
@@ -162,6 +162,22 @@ def test_supports_different_sequence_lengths_and_per_sample_valid_lengths():
     output = model(inputs)
 
     assert output["logits"].shape == (3, 3)
+
+
+def test_batch_permutation_preserves_sample_logits():
+    model = _make_model().eval()
+    inputs = _make_inputs()
+    original_logits = model(inputs)["logits"]
+
+    permutation = torch.tensor([2, 0, 1])
+    permuted_inputs = _clone_inputs(inputs)
+    for stream in permuted_inputs.values():
+        for field in ("x", "valid_mask", "time_s"):
+            stream[field] = stream[field][permutation]
+
+    permuted_logits = model(permuted_inputs)["logits"]
+
+    torch.testing.assert_close(permuted_logits, original_logits[permutation])
 
 
 def test_supports_single_valid_token_per_modality():

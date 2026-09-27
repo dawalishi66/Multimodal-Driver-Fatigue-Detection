@@ -21,7 +21,7 @@
     "distraction": {
       "dataset": "DCPT",
       "modalities": ["video", "audio"],
-      "num_classes": 9,
+      "num_classes": 6,
       "input_dims_source": "verified_feature_manifest",
       "constructor": {
         "projection_dim": 5,

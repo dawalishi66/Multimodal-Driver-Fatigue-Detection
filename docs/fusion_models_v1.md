@@ -22,7 +22,24 @@ The templates in `configs/simple_fusion_v1.example.json` and `configs/dual_modal
 | Task | Dataset | Modalities | Classes |
 |---|---|---|---:|
 | fatigue | UL-DD | video + can | 3 |
-| distraction | DCPT | video + audio | 9 |
+| distraction | DCPT | video + audio | 6 |
+
+The raw DCPT data still contains the nine original tasks 01--09. The formal
+distraction fusion profile uses only this six-class subset:
+
+```text
+01 -> 0
+03 -> 1
+04 -> 2
+05 -> 3
+07 -> 4
+08 -> 5
+```
+
+Tasks 02, 06, and 09 remain part of raw parsing and audit capability, but do
+not enter this version's formal fusion training or evaluation. The six-class
+model output contract must not be described as the raw DCPT data having only
+six tasks.
 
 Both models consume a mapping whose selected streams contain:
 
@@ -205,11 +222,15 @@ When a direction is disabled, its cross blocks are not instantiated or computed.
 
 ## 9. G1 Verification
 
-The current synthetic CPU G1 evidence is:
+The PR #9 baseline synthetic CPU G1 evidence was:
 
 - `tests/test_simple_fusion.py`: 34 collected tests;
 - `tests/test_dual_modal_mult.py`: 55 passed;
 - full repository suite: 206 passed.
+
+This M5B migration adds one six-class output test and one batch-permutation
+test to each model test file. The full repository suite must be rerun with
+the PR #9 training dependencies available.
 
 The tests cover task output shapes, `Ta != Tb`, heterogeneous valid masks, internal invalid tokens, single-token inputs, invalid-value and tail-padding invariance, MulT `time_s` independence, last-valid selection, all-invalid rejection, input contract failures, finite forward results, CrossEntropy backward, finite participating gradients, direction ablations, and CPU execution.
 
@@ -230,7 +251,9 @@ These missing items do not invalidate synthetic G1. Until they are verified, the
 
 ## 11. Known Limits
 
-- No real-data G2 integration has been completed.
+- Fatigue Video+CAN real-data G2 model-side integration was completed in PR #9;
+  this does not claim formal training or evaluation.
+- Distraction Video+Audio real-data G2 integration has not been completed.
 - No formal training has been completed.
 - No formal test evaluation has been completed.
 - The results do not show that MulT outperforms SimpleFusion.
