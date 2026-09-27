@@ -1,0 +1,398 @@
+{
+  "evidence_version": "dcpt_video_timing_evidence_v1",
+  "extractor_code": "distraction_video/tools/extract_distraction_video_features.py",
+  "extractor_code_sha256": "951EB583D3DA38532039602F6CF0BBF5B702F036A84BF9B817A74AC54FDFBE23",
+  "sidecar": "metadata/video_feature_sidecar_v1.jsonl",
+  "selection_method": "decode with PyAV and select frames using actual frame timestamps; target 16 frames per 1-second segment",
+  "sample_count": 714,
+  "effective_fps_min": 26.742535849056605,
+  "effective_fps_median": 30.10535117056856,
+  "effective_fps_max": 30.122408026755853,
+  "samples_below_29_fps": 9,
+  "samples_above_31_fps": 0,
+  "lowest_fps_samples": [
+    {
+      "sample_id": "04_P21_20231207_14_44_15_17",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.946700698145785,
+      "total_decoded_frames": 266,
+      "effective_fps": 26.742535849056605,
+      "segment_frame_counts": [
+        27,
+        27,
+        26,
+        27,
+        27,
+        26,
+        27,
+        27,
+        26,
+        26
+      ]
+    },
+    {
+      "sample_id": "07_P07_20231116_17_09_40_29",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962412874502792,
+      "total_decoded_frames": 274,
+      "effective_fps": 27.503377289377287,
+      "segment_frame_counts": [
+        28,
+        27,
+        28,
+        27,
+        28,
+        27,
+        27,
+        28,
+        27,
+        27
+      ]
+    },
+    {
+      "sample_id": "07_P39_20240110_15_58_26_16",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.945031100824533,
+      "total_decoded_frames": 276,
+      "effective_fps": 27.75255272727273,
+      "segment_frame_counts": [
+        28,
+        28,
+        27,
+        28,
+        28,
+        27,
+        28,
+        28,
+        27,
+        27
+      ]
+    },
+    {
+      "sample_id": "07_P39_20240110_15_59_39_29",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.947791731339072,
+      "total_decoded_frames": 283,
+      "effective_fps": 28.448524822695035,
+      "segment_frame_counts": [
+        29,
+        28,
+        29,
+        28,
+        28,
+        29,
+        28,
+        28,
+        29,
+        27
+      ]
+    },
+    {
+      "sample_id": "08_P22_20231207_16_28_34_24",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.936199142349126,
+      "total_decoded_frames": 286,
+      "effective_fps": 28.78364210526316,
+      "segment_frame_counts": [
+        29,
+        29,
+        29,
+        28,
+        29,
+        29,
+        28,
+        29,
+        29,
+        27
+      ]
+    },
+    {
+      "sample_id": "05_P20_20231201_16_19_07_14",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.957523849314114,
+      "total_decoded_frames": 287,
+      "effective_fps": 28.822426573426576,
+      "segment_frame_counts": [
+        29,
+        29,
+        29,
+        28,
+        29,
+        29,
+        29,
+        28,
+        29,
+        28
+      ]
+    },
+    {
+      "sample_id": "04_P38_20240110_14_31_42_25",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.957177175086168,
+      "total_decoded_frames": 287,
+      "effective_fps": 28.823430069930073,
+      "segment_frame_counts": [
+        29,
+        29,
+        29,
+        28,
+        29,
+        29,
+        29,
+        28,
+        29,
+        28
+      ]
+    },
+    {
+      "sample_id": "03_P38_20240110_14_26_37_23",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.939874187606437,
+      "total_decoded_frames": 287,
+      "effective_fps": 28.873604895104894,
+      "segment_frame_counts": [
+        29,
+        29,
+        29,
+        29,
+        28,
+        29,
+        29,
+        29,
+        28,
+        28
+      ]
+    },
+    {
+      "sample_id": "05_P21_20231207_14_58_46_11",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.931826833235284,
+      "total_decoded_frames": 288,
+      "effective_fps": 28.997686411149825,
+      "segment_frame_counts": [
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        27
+      ]
+    },
+    {
+      "sample_id": "04_P21_20231207_14_45_10_15",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.93981083404987,
+      "total_decoded_frames": 290,
+      "effective_fps": 29.17560553633218,
+      "segment_frame_counts": [
+        30,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        29,
+        28
+      ]
+    }
+  ],
+  "highest_fps_samples": [
+    {
+      "sample_id": "07_P11_20231124_14_52_26_25",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.959363133701952,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.122408026755853,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "03_P11_20231124_14_32_03_22",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.960026648900733,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.12040133779264,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "07_P05_20231116_11_27_46_27",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.9613539445629,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.11638795986622,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "01_P11_20231124_14_17_39_17",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.96168582375479,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.115384615384613,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "05_P17_20231130_14_51_42_24",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962017725061639,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.114381270903007,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "08_P12_20231125_14_56_42_20",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962017725061639,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.114381270903007,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "01_P06_20231116_14_11_09_24",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962349648485656,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.113377926421407,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "05_P36_20240109_17_00_33_27",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962349648485656,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.113377926421407,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "01_P27_20231226_14_23_13_20",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962681594029055,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.1123745819398,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    },
+    {
+      "sample_id": "04_P01_20231111_10_21_34_17",
+      "decoded_start_s": 0.0,
+      "decoded_end_s": 9.962681594029055,
+      "total_decoded_frames": 300,
+      "effective_fps": 30.1123745819398,
+      "segment_frame_counts": [
+        31,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29
+      ]
+    }
+  ],
+  "limitation": "Raw upper-body video files are not present in the current environment, so this evidence uses the existing timestamp-aware extraction sidecar rather than a new decode replay."
+}

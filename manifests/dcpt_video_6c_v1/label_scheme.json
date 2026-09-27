@@ -1,0 +1,20 @@
+{
+  "label_scheme": "dcpt_video_6c_v1",
+  "class_names": [
+    "No task",
+    "Playing game",
+    "Messaging",
+    "Phone call",
+    "Reading",
+    "Eating"
+  ],
+  "task_to_class": {
+    "01": 0,
+    "03": 1,
+    "04": 2,
+    "05": 3,
+    "07": 4,
+    "08": 5
+  },
+  "note": "Formal DCPT six-class distraction scope. Original tasks 02/06/09 exist but are outside this protocol version. Legacy artifact label_scheme dcpt_6c_v1 is an alias with the same class/task mapping and is not modified."
+}

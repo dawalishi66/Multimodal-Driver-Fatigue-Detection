@@ -1,0 +1,43 @@
+{
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "task": "distraction",
+  "dataset": "DCPT",
+  "modalities": [
+    "video"
+  ],
+  "num_classes": 6,
+  "label_scheme": "dcpt_video_6c_v1",
+  "window": {
+    "duration_s": 10.0,
+    "policy": "original_clip",
+    "additional_sliding_windows": false
+  },
+  "quality": {
+    "version": "qc_v0.1_preflight",
+    "min_raw_coverage": 0.95,
+    "min_feature_coverage": 0.95,
+    "max_contiguous_unusable_s": 1.0
+  },
+  "data": {
+    "manifest": "manifests/dcpt_video_6c_v1/samples.jsonl",
+    "metadata_csv": "manifests/dcpt_video_6c_v1/video_windows_10s_v1.csv",
+    "feature_index": "manifests/dcpt_video_6c_v1/feature_index_v1.jsonl",
+    "feature_root": "DCPT_UpperBody_Video/processed",
+    "video_feature_version": "r3d18_kinetics400_v1",
+    "source_split_version": "dcpt_subject_24_8_8_seed2026_v1_provisional",
+    "candidate_split_version": "dcpt_subject_24_8_8_seed2026_v1_freeze_candidate"
+  },
+  "training": {
+    "seeds": [
+      11,
+      22,
+      33
+    ],
+    "selection_metric": "val_clip_macro_f1",
+    "test_each_epoch": false
+  },
+  "evaluation": {
+    "primary_unit": "original_clip"
+  }
+}
