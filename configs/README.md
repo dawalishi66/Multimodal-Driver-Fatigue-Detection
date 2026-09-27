@@ -15,3 +15,8 @@ complete-8 train/validation共同集合，供真实特征G2冒烟使用。它不
 `fusion/fatigue_video_can/simple_fusion_v1_train_val.json` 与
 `fusion/fatigue_video_can/mult_v1_train_val.json` 是同一共同集合上的开发训练配置，固定
 种子、早停和评测口径。两者均不提供test数据路径，不能作为最终测试配置使用。
+
+`fusion/distraction_video_audio/g2_preflight_v1.json` 是 DCPT Video+Audio
+model-side G2 preflight config，仅用于外部公共 batch 的模型接口冒烟；它
+不是 formal train/val config，不包含 test 路径，也不冻结 split、cohort 或
+P04。

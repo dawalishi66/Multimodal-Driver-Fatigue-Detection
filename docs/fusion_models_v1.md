@@ -249,11 +249,46 @@ Real-data G2 requires, without implementing it in this delivery:
 
 These missing items do not invalidate synthetic G1. Until they are verified, the project must not claim that real-data fusion is complete.
 
+## 10.1 DCPT Video+Audio model-side G2 harness
+
+The model-side preflight configuration is
+`configs/fusion/distraction_video_audio/g2_preflight_v1.json`, and the batch
+runner is `tools/fusion/distraction_video_audio/prepare.py`. This is a
+model-side G2 preflight configuration, not a formal train/validation
+experiment configuration. It has no test path and does not freeze the DCPT
+split, cohort, or P04 evidence.
+
+The runner accepts a batch supplied by the owner-provided public
+Dataset/collate. Its model inputs are exactly:
+
+```text
+video: x float32[B,10,512], valid_mask bool[B,10], time_s floating[B,10]
+audio: x float32[B,5,2048], valid_mask bool[B,5], time_s floating[B,5]
+```
+
+`labels int64[B]` are used for the one-step `CrossEntropyLoss` check but are
+not passed into the model. `support_s`, `observed_fraction`, IDs, subjects,
+sessions, and split fields may remain in the external batch for audit, but are
+not model inputs. The runner checks C=6 logits, finite gradients, tail-padding
+invariance, state-dict checkpoint reload consistency, parameter count, and
+CUDA peak memory when CUDA is available. It reports the one-step loss under
+`one_step_loss_not_a_metric`; it does not calculate performance metrics.
+
+The synthetic harness tests use an explicitly marked `synthetic_test` batch
+and establish only `G2 HARNESS READY`. They do not establish REAL DCPT G2.
+REAL DCPT G2 still requires an owner-provided real batch after the owner
+freezes the split/cohort, P04 is signed, public Dataset/collate and train-only
+normalization are available, and test remains inaccessible. These upstream
+data-contract and synchronization tasks are not part of 饶棋涛's model-side
+responsibility. `time_s` remains a required interface field; MulT v1 still
+uses sequence sinusoidal positions rather than real-time encoding.
+
 ## 11. Known Limits
 
 - Fatigue Video+CAN real-data G2 model-side integration was completed in PR #9;
   this does not claim formal training or evaluation.
-- Distraction Video+Audio real-data G2 integration has not been completed.
+- Distraction Video+Audio model-side G2 harness is ready for an external batch;
+  real-data G2 integration has not been completed.
 - No formal training has been completed.
 - No formal test evaluation has been completed.
 - The results do not show that MulT outperforms SimpleFusion.
