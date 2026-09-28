@@ -16,7 +16,7 @@
 
 ## 特征接口
 
-`video_handoff_v2.zip` 包含 1,909 个 train/validation 视频候选，每个 NPZ 恰好包含：
+`video_handoff_v2_team_package_20260911.zip`（6,061,624 字节）包含 1,909 个 train/validation 视频候选，每个 NPZ 恰好包含：
 
 | 数组 | dtype 和 shape |
 | --- | --- |
