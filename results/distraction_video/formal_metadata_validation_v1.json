@@ -8,6 +8,6 @@
   "min_valid_ratio": 0.95,
   "errors": [],
   "warnings": [
-    "Six-class labels and the 24/8/8 subject split remain provisional until frozen by the project lead."
+    "Formal six-class labels are fixed as dcpt_video_6c_v1; the 24/8/8 subject split remains a candidate awaiting owner signoff."
   ]
 }

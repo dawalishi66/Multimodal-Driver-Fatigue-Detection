@@ -36,8 +36,9 @@ synthetic tests and small documentation.
 5 Eating
 ```
 
-The provisional label scheme is `dcpt_video_6c_v1`; the subject split is
-`dcpt_subject_24_8_8_seed2026_v1_provisional` (24/8/8, seed 2026).
+The formal six-class label scheme is `dcpt_video_6c_v1`; the 24/8/8 subject
+split remains a candidate (`dcpt_subject_24_8_8_seed2026_v1_freeze_candidate`)
+until the project lead signs it.
 
 ## Metadata and validation
 

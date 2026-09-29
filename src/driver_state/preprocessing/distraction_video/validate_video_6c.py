@@ -234,7 +234,8 @@ def validate_video_6c(
             message = str(exc) if isinstance(exc, ValueError) else type(exc).__name__
             error("INVALID_ROW", message, row_number)
     report["warnings"].append(
-        "Six-class labels and the 24/8/8 subject split remain provisional until frozen by the project lead."
+        "Formal six-class labels are fixed as dcpt_video_6c_v1; the 24/8/8 "
+        "subject split remains a candidate awaiting owner signoff."
     )
     report["status"] = "PASS" if not report["errors"] else "FAIL"
     return report
