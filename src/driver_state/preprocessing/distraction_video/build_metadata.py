@@ -32,6 +32,8 @@ FEATURE_EXTRACTOR_NAME = "torchvision_r3d_18"
 FEATURE_EXTRACTOR_VERSION = "0.24.1_kinetics400_v1"
 FEATURE_LAYOUT = "video_features_v1"
 ERROR_NO_FEATURES = "NO_FEATURES_YET"
+ERROR_FEATURE_NOT_VERIFIED = "FEATURE_NOT_VERIFIED"
+ERROR_FEATURE_FILE_MISSING = "FEATURE_FILE_MISSING"
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -107,18 +109,30 @@ def build_6c_rows(
                 dtype = str(x.dtype)
             valid = valid_ratio >= 0.95
             error = "" if valid else "coverage_below_0.95"
+            mask = f"{feature_rel}::valid_mask"
+            stored_feature_path = feature_rel
+            stored_shape = shape
+            stored_dtype = dtype
         elif feature_index is not None and sample_id in features:
-            valid_ratio = 1.0
-            shape = "[10, 512]"
-            dtype = "float32"
-            valid = True
-            error = ""
+            valid_ratio = 0.0
+            valid = False
+            error = (
+                ERROR_FEATURE_NOT_VERIFIED
+                if root is None
+                else ERROR_FEATURE_FILE_MISSING
+            )
+            mask = ""
+            stored_feature_path = feature_rel
+            stored_shape = ""
+            stored_dtype = ""
         else:
             valid_ratio = 0.0
-            shape = ""
-            dtype = ""
             valid = False
             error = ERROR_NO_FEATURES
+            mask = ""
+            stored_feature_path = ""
+            stored_shape = ""
+            stored_dtype = ""
         source = manifest["source_refs"]["video_file"].replace("\\", "/")
         rows.append({
             "sample_id": sample_id,
@@ -136,10 +150,10 @@ def build_6c_rows(
             "label_scheme": str(label_scheme.get("label_scheme", VIDEO_LABEL_SCHEME_NAME)),
             "valid": "true" if valid else "false",
             "valid_ratio": f"{valid_ratio:.6f}",
-            "mask": f"{feature_rel}::valid_mask" if valid else "",
-            "feature_path": feature_rel if valid else "",
-            "feature_shape": shape if valid else "",
-            "feature_dtype": dtype if valid else "",
+            "mask": mask,
+            "feature_path": stored_feature_path,
+            "feature_shape": stored_shape,
+            "feature_dtype": stored_dtype,
             "extractor_name": FEATURE_EXTRACTOR_NAME,
             "extractor_version": FEATURE_EXTRACTOR_VERSION,
             "error": error,

@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 
@@ -26,13 +27,31 @@ def _source_stems(value: str) -> list[str]:
     return [_stem(entry) for entry in entries if isinstance(entry, str) and entry]
 
 
+def _index_rows(
+    path: Path,
+    label: str,
+    errors: list[str],
+) -> tuple[list[dict[str, str]], dict[str, dict[str, str]]]:
+    rows = _read(path)
+    counts = Counter(row.get("sample_id", "") for row in rows)
+    duplicates = sorted(sample_id for sample_id, count in counts.items() if sample_id and count > 1)
+    if "" in counts:
+        errors.append(f"{label} contains {counts['']} rows with empty sample_id")
+    if duplicates:
+        errors.append(
+            f"duplicate {label} sample_id: {len(duplicates)} ids, e.g. {duplicates[:5]}"
+        )
+    return rows, {row["sample_id"]: row for row in rows if row.get("sample_id")}
+
+
 def check_pairs(
     audio_csv: Path | str,
     video_csv: Path | str,
     report: Path | str | None = None,
 ) -> dict[str, object]:
-    audio = {row["sample_id"]: row for row in _read(Path(audio_csv))}
-    video = {row["sample_id"]: row for row in _read(Path(video_csv))}
+    errors: list[str] = []
+    audio_rows, audio = _index_rows(Path(audio_csv), "audio", errors)
+    video_rows, video = _index_rows(Path(video_csv), "video", errors)
     audio_ids, video_ids = set(audio), set(video)
     common = audio_ids & video_ids
     label_mismatch = []
@@ -60,7 +79,6 @@ def check_pairs(
         ):
             source_mismatch.append(sample_id)
 
-    errors: list[str] = []
     if audio_ids - video_ids:
         errors.append(f"audio-only samples: {len(audio_ids - video_ids)}")
     if video_ids - audio_ids:
@@ -76,8 +94,10 @@ def check_pairs(
 
     result: dict[str, object] = {
         "status": "PASS" if not errors else "FAIL",
-        "audio_rows": len(audio),
-        "video_rows": len(video),
+        "audio_rows": len(audio_rows),
+        "video_rows": len(video_rows),
+        "audio_unique_ids": len(audio),
+        "video_unique_ids": len(video),
         "common_samples": len(common),
         "only_audio_count": len(audio_ids - video_ids),
         "only_video_count": len(video_ids - audio_ids),

@@ -62,6 +62,8 @@ def _check_feature(row: dict[str, str], root: Path, duration_s: float) -> float:
     x = arrays["x"]
     if x.ndim != 2 or min(x.shape) < 1:
         raise ValueError("x must have nonempty shape [T,D]")
+    if x.shape != (10, 512):
+        raise ValueError("x shape must be exactly [10,512]")
     length = x.shape[0]
     expected = {
         "time_s": (length,),

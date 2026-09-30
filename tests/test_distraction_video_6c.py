@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 
 from driver_state.preprocessing.distraction_video.build_metadata import (
+    ERROR_FEATURE_FILE_MISSING,
+    ERROR_FEATURE_NOT_VERIFIED,
     VIDEO_6C_CSV_FIELDS,
     build_6c_rows,
     load_feature_index,
@@ -57,13 +59,13 @@ def _manifest() -> list[dict]:
     }]
 
 
-def _feature_root(tmp: Path) -> Path:
+def _feature_root(tmp: Path, dim: int = 512) -> Path:
     root = tmp / "processed"
     path = root / "video_features_v1" / f"{SAMPLE_ID}.npz"
     path.parent.mkdir(parents=True)
     np.savez(
         path,
-        x=np.zeros((10, 8), dtype=np.float32),
+        x=np.zeros((10, dim), dtype=np.float32),
         time_s=np.arange(10, dtype=np.float64) + 0.5,
         valid_mask=np.ones(10, dtype=bool),
         support_s=np.array([[index, index + 1] for index in range(10)], dtype=np.float64),
@@ -107,7 +109,7 @@ def test_build_and_validate_video_6c(tmp_path: Path) -> None:
     assert rows[0]["label_id"] == "0"
     assert rows[0]["modality"] == "video"
     assert rows[0]["valid"] == "true"
-    assert rows[0]["feature_shape"] == "[10, 8]"
+    assert rows[0]["feature_shape"] == "[10, 512]"
 
     csv_path = tmp_path / "video.csv"
     _write_csv(csv_path, rows)
@@ -150,7 +152,7 @@ def test_validate_accepts_invalid_row_with_existing_feature(tmp_path: Path) -> N
         "valid_ratio": "0.9",
         "mask": f"video_features_v1/{SAMPLE_ID}.npz::valid_mask",
         "feature_path": f"video_features_v1/{SAMPLE_ID}.npz",
-        "feature_shape": "[10, 8]",
+        "feature_shape": "[10, 512]",
         "feature_dtype": "float32",
         "extractor_name": "torchvision_r3d_18",
         "extractor_version": "0.24.1_kinetics400_v1",
@@ -166,6 +168,77 @@ def test_validate_accepts_invalid_row_with_existing_feature(tmp_path: Path) -> N
     )
     assert report["status"] == "PASS", report["errors"]
     assert report["checked_feature_count"] == 1
+
+
+def test_build_requires_actual_npz_when_feature_index_is_present(tmp_path: Path) -> None:
+    scheme = load_label_scheme(_scheme(tmp_path))
+    splits = load_subject_splits(_splits(tmp_path))
+    feature_index = load_feature_index(_feature_index(tmp_path))
+    rows = build_6c_rows(_manifest(), scheme, splits, feature_index, None)
+    assert rows[0]["valid"] == "false"
+    assert rows[0]["valid_ratio"] == "0.000000"
+    assert rows[0]["error"] == ERROR_FEATURE_NOT_VERIFIED
+    assert rows[0]["feature_shape"] == ""
+    assert rows[0]["feature_dtype"] == ""
+    assert rows[0]["feature_path"].endswith(f"{SAMPLE_ID}.npz")
+
+    empty_root = tmp_path / "empty"
+    empty_root.mkdir()
+    missing_rows = build_6c_rows(
+        _manifest(), scheme, splits, feature_index, empty_root
+    )
+    assert missing_rows[0]["valid"] == "false"
+    assert missing_rows[0]["error"] == ERROR_FEATURE_FILE_MISSING
+
+
+def test_build_preserves_descriptors_for_low_coverage_feature(tmp_path: Path) -> None:
+    scheme_path = _scheme(tmp_path)
+    splits_path = _splits(tmp_path)
+    feature_root = _feature_root(tmp_path)
+    feature_path = feature_root / "video_features_v1" / f"{SAMPLE_ID}.npz"
+    with np.load(feature_path, allow_pickle=False) as archive:
+        arrays = {name: archive[name].copy() for name in archive.files}
+    arrays["valid_mask"][-1] = False
+    arrays["observed_fraction"][-1] = 0.0
+    arrays["x"][-1] = 0.0
+    np.savez(feature_path, **arrays)
+    rows = build_6c_rows(
+        _manifest(),
+        load_label_scheme(scheme_path),
+        load_subject_splits(splits_path),
+        load_feature_index(_feature_index(tmp_path)),
+        feature_root,
+    )
+    assert rows[0]["valid"] == "false"
+    assert rows[0]["valid_ratio"] == "0.900000"
+    assert rows[0]["error"] == "coverage_below_0.95"
+    assert rows[0]["feature_path"] == f"video_features_v1/{SAMPLE_ID}.npz"
+    assert rows[0]["mask"].endswith("::valid_mask")
+    assert rows[0]["feature_shape"] == "[10, 512]"
+    assert rows[0]["feature_dtype"] == "float32"
+
+
+def test_validate_rejects_wrong_feature_shape(tmp_path: Path) -> None:
+    scheme_path = _scheme(tmp_path)
+    splits_path = _splits(tmp_path)
+    feature_root = _feature_root(tmp_path, dim=8)
+    rows = build_6c_rows(
+        _manifest(),
+        load_label_scheme(scheme_path),
+        load_subject_splits(splits_path),
+        load_feature_index(_feature_index(tmp_path)),
+        feature_root,
+    )
+    csv_path = tmp_path / "video_wrong_shape.csv"
+    _write_csv(csv_path, rows)
+    report = validate_video_6c(
+        csv_path,
+        label_scheme_path=scheme_path,
+        subject_splits_path=splits_path,
+        feature_root=feature_root,
+    )
+    assert report["status"] == "FAIL"
+    assert any("[10,512]" in error["message"] for error in report["errors"])
 
 
 def test_pair_check_passes_for_matching_video_and_audio(tmp_path: Path) -> None:
@@ -185,15 +258,39 @@ def test_pair_check_passes_for_matching_video_and_audio(tmp_path: Path) -> None:
     fields = list(video_row)
     video_csv = tmp_path / "video_pair.csv"
     audio_csv = tmp_path / "audio_pair.csv"
-    _write_csv_with_fields(video_csv, video_row, fields)
-    _write_csv_with_fields(audio_csv, audio_row, fields)
+    _write_csv_with_fields(video_csv, [video_row], fields)
+    _write_csv_with_fields(audio_csv, [audio_row], fields)
     report = check_pairs(audio_csv, video_csv)
     assert report["status"] == "PASS"
     assert report["common_samples"] == 1
 
 
-def _write_csv_with_fields(path: Path, row: dict[str, str], fields: list[str]) -> None:
+def test_pair_check_rejects_duplicate_sample_ids(tmp_path: Path) -> None:
+    video_row = {
+        "sample_id": SAMPLE_ID,
+        "subject_id": "P01",
+        "session_id": SESSION_ID,
+        "split": "val",
+        "label_id": "0",
+        "label_class": "No task",
+        "source_file": json.dumps([f"Upper_body_video_01/{SAMPLE_ID}.mp4"]),
+    }
+    audio_row = dict(
+        video_row,
+        source_file=json.dumps([f"First_person_view_audio/{SAMPLE_ID}.wav"]),
+    )
+    fields = list(video_row)
+    video_csv = tmp_path / "video_duplicate.csv"
+    audio_csv = tmp_path / "audio_pair.csv"
+    _write_csv_with_fields(video_csv, [video_row, video_row], fields)
+    _write_csv_with_fields(audio_csv, [audio_row], fields)
+    report = check_pairs(audio_csv, video_csv)
+    assert report["status"] == "FAIL"
+    assert any("duplicate video sample_id" in error for error in report["errors"])
+
+
+def _write_csv_with_fields(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
-        writer.writerow(row)
+        writer.writerows(rows)
