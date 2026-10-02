@@ -1,1 +1,5 @@
-"""Owner: 饶棋涛. Future simple-fusion reference on the same paired cohort."""
+"""Simple two-modal fusion model."""
+
+from .model import SimpleFusion
+
+__all__ = ["SimpleFusion"]
