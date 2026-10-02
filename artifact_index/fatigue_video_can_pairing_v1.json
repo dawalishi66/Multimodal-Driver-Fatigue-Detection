@@ -1,0 +1,65 @@
+{
+  "artifact_id": "uldd-fatigue-video-can-pairing-v1",
+  "artifact_type": "derived_manifest_bundle",
+  "version": "1.0.0",
+  "owner": "李坤洋",
+  "formal_result": false,
+  "test_manifest_accessed": false,
+  "location_from_uldd_root": "Paired_Video_CAN_v1",
+  "inputs": {
+    "video_handoff_v2_sha256": "00a6a2fdb5596ecfe6ed6fc688f42ad7680f509346b3e10b1ebef3de6a59b4e5",
+    "can_train_manifest_sha256": "876fe1c63430286f48c3535ddc3ee20702e244327517c434f2de86c9a3e7a6a5",
+    "can_val_manifest_sha256": "e4a3c53cc9ea556c94b2e2a94870bf6a4c4f6b0cba6b1ec37fe4438cdf28bcda"
+  },
+  "outputs": [
+    {
+      "path": "manifests/fatigue_video_can_pairs_all_v1.csv",
+      "bytes": 1795948,
+      "sha256": "610c0ee69e7c20bac60312109aa61602d2f9511eb76281389c5f9201d3aaf352"
+    },
+    {
+      "path": "manifests/fatigue_video_can_complete8_train_val_v1.csv",
+      "bytes": 1566750,
+      "sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b"
+    },
+    {
+      "path": "manifests/fatigue_video_can_parents_train_val_v1.csv",
+      "bytes": 60448,
+      "sha256": "eaedf2d09eccbfa9323d3b1b02af27473f30fb498915479667b091b1017f1d9e"
+    },
+    {
+      "path": "reports/video_can_sync_audit_v1.csv",
+      "bytes": 5358,
+      "sha256": "c07f33b3510ae9eb9c8c9450e6a16dbdc15f19654658f68261759d367b7a2664"
+    },
+    {
+      "path": "reports/fatigue_video_can_pair_validation_v1.json",
+      "bytes": 1924,
+      "sha256": "eae739a8bd3dbfc497992cdff1c07145d779b828be35a1652d32bfcbb8aace28"
+    },
+    {
+      "path": "reports/fatigue_video_can_dataset_validation_v1.json",
+      "bytes": 2728,
+      "sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639"
+    }
+  ],
+  "counts": {
+    "direct_valid_pairs": 1622,
+    "complete8_train_windows": 1272,
+    "complete8_val_windows": 328,
+    "complete8_train_parents": 159,
+    "complete8_val_parents": 41
+  },
+  "data_interface_validation": {
+    "status": "PASS",
+    "code_commit": "8f9ecfcece84f231e65477848847b6557db759a0",
+    "checked_feature_pairs": 1600,
+    "checked_parents": 200,
+    "video_shape": [6, 96],
+    "can_shape": [300, 9],
+    "test_manifest_accessed": false
+  },
+  "sync_status": "provider_documented_aligned",
+  "hardware_clock_verified": false,
+  "access": "Derived manifests remain outside Git; verify every listed SHA-256 before use."
+}

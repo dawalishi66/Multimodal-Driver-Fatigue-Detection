@@ -1,0 +1,1 @@
+"""Fatigue CAN baseline commands."""
