@@ -332,3 +332,48 @@ def test_simple_fusion_seed_runner_writes_complete_validation_package(tmp_path):
     report = json.loads((seed_root / "metrics.json").read_text(encoding="utf-8"))
     assert report["formal_result"] is False
     assert report["test_manifest_accessed"] is False
+
+
+def test_video_gru_seed_runner_uses_only_video_and_writes_package(tmp_path):
+    config = json.loads(
+        (REPOSITORY / "configs/baselines/fatigue_video/gru_v1_train_val.json")
+        .read_text(encoding="utf-8")
+    )
+    config["training"]["physical_batch_size"] = 4
+    config["training"]["effective_batch_size"] = 4
+    config["training"]["max_epochs"] = 2
+    config["training"]["early_stopping_patience"] = 1
+    train = TinyPairedDataset(split="train", subject="D")
+    val = TinyPairedDataset(split="val", subject="A")
+    standardizers = {
+        "video": MaskedStandardizer.fit_dataset_modality(
+            train,
+            modality="video",
+            feature_names=tuple(f"v{index}" for index in range(96)),
+        )
+    }
+
+    result = run_seed(
+        experiment_id="synthetic_video",
+        experiment_root=tmp_path,
+        seed=11,
+        config=config,
+        config_sha256="d" * 64,
+        train_dataset=train,
+        val_dataset=val,
+        standardizers=standardizers,
+        input_hashes={"pair_manifest": "c" * 64},
+        git_state={"commit": "e" * 40, "branch": "synthetic", "dirty": False},
+        device=torch.device("cpu"),
+    )
+
+    assert result["status"] == "PASS"
+    assert result["validation_windows"] == 8
+    report = json.loads((tmp_path / "seed_11/metrics.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (tmp_path / "seed_11/run_manifest.json").read_text(encoding="utf-8")
+    )
+    assert report["modalities"] == ["video"]
+    assert manifest["modalities"] == ["video"]
+    assert (tmp_path / "seed_11/preprocess_state/video_normalizer.json").is_file()
+    assert not (tmp_path / "seed_11/preprocess_state/can_normalizer.json").exists()

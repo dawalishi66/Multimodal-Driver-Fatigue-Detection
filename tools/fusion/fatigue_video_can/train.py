@@ -25,6 +25,7 @@ from driver_state.data import (
     make_fusion_model_inputs,
 )
 from driver_state.data.can import file_sha256
+from driver_state.baselines.fatigue_video import VideoGruBaseline
 from driver_state.engine import (
     EarlyStoppingTracker,
     capture_environment,
@@ -44,7 +45,7 @@ from driver_state.preprocessing.fatigue_can.pipeline import CAN_FEATURE_COLUMNS
 
 
 CLASS_NAMES = ("low", "medium", "high")
-MODALITIES = ("video", "can")
+PAIR_MODALITIES = ("video", "can")
 PROBABILITY_FIELDS = ("prob_low", "prob_medium", "prob_high")
 WINDOW_FIELDS = (
     "run_id", "seed", "split", "sample_id", "video_sample_id", "can_sample_id",
@@ -117,6 +118,13 @@ def _is_sha256(value: Any) -> bool:
     return len(text) == 64 and all(character in "0123456789abcdef" for character in text)
 
 
+def _model_modalities(config: Mapping[str, Any]) -> tuple[str, ...]:
+    modalities = tuple(config.get("modalities", ()))
+    if modalities not in (("video",), PAIR_MODALITIES):
+        raise ValueError("modalities must be ['video'] or ['video', 'can']")
+    return modalities
+
+
 def verify_train_val_config(config: dict[str, Any]) -> None:
     """Reject protocol drift, unverified inputs, and every test-data path."""
     _reject_placeholders(config)
@@ -127,7 +135,6 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
         "status": "development_train_val_not_formal_result",
         "task": "fatigue",
         "dataset": "UL-DD",
-        "modalities": list(MODALITIES),
         "label_scheme": "uldd_kss_4_7_v1",
         "num_classes": 3,
         "classes": list(CLASS_NAMES),
@@ -135,6 +142,8 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
     for key, value in expected.items():
         if config.get(key) != value:
             raise ValueError(f"{key} must be {value!r}")
+
+    modalities = _model_modalities(config)
 
     data = config.get("data", {})
     forbidden = [key for key in data if "test" in key.lower()]
@@ -178,7 +187,7 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
         raise ValueError("training inputs must be video [6,96] and CAN [300,9]")
     if inputs["can"]["feature_columns"] != list(CAN_FEATURE_COLUMNS):
         raise ValueError("CAN feature order differs from preprocessing v1")
-    for modality in MODALITIES:
+    for modality in modalities:
         if inputs[modality]["normalization"] != "train_only_masked_zscore_v1":
             raise ValueError(f"{modality} normalization must be train-only")
         if inputs[modality]["time_reference"] != "sample_relative_0_to_30_seconds":
@@ -187,7 +196,20 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
         raise ValueError("mask semantics must remain True=valid")
 
     model = config["model"]
-    if model.get("model_id") == "simple_fusion_v1":
+    if model.get("model_id") == "video_gru_v1":
+        if modalities != ("video",):
+            raise ValueError("video_gru_v1 must use only the video modality")
+        required_model = {
+            "model_id": "video_gru_v1",
+            "class": "VideoGruBaseline",
+            "projection_dim": 64,
+            "hidden_dim": 64,
+            "dropout": 0.2,
+            "time_s_used_for_prediction": False,
+        }
+    elif model.get("model_id") == "simple_fusion_v1":
+        if modalities != PAIR_MODALITIES:
+            raise ValueError("simple_fusion_v1 requires video and can")
         required_model = {
             "model_id": "simple_fusion_v1",
             "class": "SimpleFusion",
@@ -197,6 +219,8 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
             "time_s_used_for_prediction": False,
         }
     elif model.get("model_id") == "dual_modal_mult_v1":
+        if modalities != PAIR_MODALITIES:
+            raise ValueError("dual_modal_mult_v1 requires video and can")
         required_model = {
             "model_id": "dual_modal_mult_v1",
             "class": "DualModalMulT",
@@ -212,7 +236,9 @@ def verify_train_val_config(config: dict[str, Any]) -> None:
             "time_s_used_for_prediction": False,
         }
     else:
-        raise ValueError("model_id must be simple_fusion_v1 or dual_modal_mult_v1")
+        raise ValueError(
+            "model_id must be video_gru_v1, simple_fusion_v1 or dual_modal_mult_v1"
+        )
     if model != required_model:
         raise ValueError(f"{model.get('model_id')} development architecture changed")
 
@@ -311,9 +337,17 @@ def _verify_frozen_inputs(pair_root: Path, config: dict[str, Any]) -> dict[str, 
 def _build_model(config: dict[str, Any]) -> nn.Module:
     model = config["model"]
     input_dims = {"video": 96, "can": 9}
+    if model["model_id"] == "video_gru_v1":
+        return VideoGruBaseline(
+            input_dim=input_dims["video"],
+            projection_dim=int(model["projection_dim"]),
+            hidden_dim=int(model["hidden_dim"]),
+            num_classes=3,
+            dropout=float(model["dropout"]),
+        )
     if model["model_id"] == "simple_fusion_v1":
         return SimpleFusion(
-            modalities=MODALITIES,
+            modalities=PAIR_MODALITIES,
             input_dims=input_dims,
             num_classes=3,
             projection_dim=int(model["projection_dim"]),
@@ -321,7 +355,7 @@ def _build_model(config: dict[str, Any]) -> nn.Module:
             dropout=float(model["dropout"]),
         )
     return DualModalMulT(
-        modalities=MODALITIES,
+        modalities=PAIR_MODALITIES,
         input_dims=input_dims,
         num_classes=3,
         d_model=int(model["d_model"]),
@@ -335,11 +369,16 @@ def _build_model(config: dict[str, Any]) -> nn.Module:
     )
 
 
-def _move_inputs(batch: Mapping[str, Any], device: torch.device) -> dict[str, dict[str, Tensor]]:
+def _move_inputs(
+    batch: Mapping[str, Any],
+    device: torch.device,
+    modalities: Sequence[str] = PAIR_MODALITIES,
+) -> dict[str, dict[str, Tensor]]:
     inputs = make_fusion_model_inputs(batch)
     return {
         modality: {name: value.to(device) for name, value in stream.items()}
         for modality, stream in inputs.items()
+        if modality in modalities
     }
 
 
@@ -374,7 +413,7 @@ def _train_epoch(
     total_loss = 0.0
     total_samples = 0
     for batch in loader:
-        inputs = _move_inputs(batch, device)
+        inputs = _move_inputs(batch, device, getattr(model, "modalities", PAIR_MODALITIES))
         labels = batch["labels"].to(device)
         optimizer.zero_grad(set_to_none=True)
         logits = model(inputs)["logits"]
@@ -409,7 +448,9 @@ def _predict(
     with torch.no_grad():
         for batch in loader:
             labels = batch["labels"].to(device)
-            logits = model(_move_inputs(batch, device))["logits"]
+            logits = model(
+                _move_inputs(batch, device, getattr(model, "modalities", PAIR_MODALITIES))
+            )["logits"]
             if not torch.isfinite(logits).all():
                 raise RuntimeError("validation logits contain NaN or Inf")
             loss = loss_function(logits, labels)
@@ -587,10 +628,17 @@ def _checkpoint_payload(
     git_commit: str,
 ) -> dict[str, Any]:
     return {
-        "format_version": "fatigue_video_can_fusion_state_dict_v1",
+        "format_version": (
+            "fatigue_video_gru_state_dict_v1"
+            if config["model"]["model_id"] == "video_gru_v1"
+            else "fatigue_video_can_fusion_state_dict_v1"
+        ),
         "model_state_dict": model.state_dict(),
         "model_config": copy.deepcopy(config["model"]),
-        "input_shapes": {key: value["shape"] for key, value in config["inputs"].items() if key in MODALITIES},
+        "input_shapes": {
+            key: config["inputs"][key]["shape"]
+            for key in _model_modalities(config)
+        },
         "classes": list(config["classes"]),
         "seed": seed,
         "best_epoch": epoch,
@@ -741,7 +789,7 @@ def run_seed(
         "formal_result": False,
         "test_manifest_accessed": False,
         "task": "fatigue",
-        "modalities": list(MODALITIES),
+        "modalities": list(_model_modalities(config)),
         "model_id": config["model"]["model_id"],
         "cohort": config["data"]["cohort"],
         "run_id": run_id,
@@ -790,7 +838,8 @@ def run_seed(
     _write_json(seed_root / "coverage_report.json", coverage)
     _atomic_text(
         seed_root / "README.md",
-        "# Fatigue video + CAN train/val development run\n\n"
+        f"# Fatigue {'video-only' if _model_modalities(config) == ('video',) else 'video + CAN'} "
+        "train/val development run\n\n"
         f"- Model: {config['model']['model_id']}\n"
         f"- Seed: {seed}\n"
         f"- Best epoch: {checkpoint['best_epoch']}; epochs run: {len(log_rows)}\n"
@@ -809,7 +858,7 @@ def run_seed(
             "status": "DEVELOPMENT_TRAIN_VAL_COMPLETE",
             "formal_result": False,
             "task": "fatigue",
-            "modalities": list(MODALITIES),
+            "modalities": list(_model_modalities(config)),
             "model_id": config["model"]["model_id"],
             "cohort": config["data"]["cohort"],
             "seed": seed,
@@ -942,17 +991,17 @@ def train_experiment(args: argparse.Namespace) -> dict[str, Any]:
         )
     )
     _assert_expected_counts(train_dataset, val_dataset, config["data"]["expected_counts"])
+    feature_names = {
+        "video": tuple(f"video_feature_{index:03d}" for index in range(96)),
+        "can": CAN_FEATURE_COLUMNS,
+    }
     standardizers = {
-        "video": MaskedStandardizer.fit_dataset_modality(
+        modality: MaskedStandardizer.fit_dataset_modality(
             train_dataset,
-            modality="video",
-            feature_names=tuple(f"video_feature_{index:03d}" for index in range(96)),
-        ),
-        "can": MaskedStandardizer.fit_dataset_modality(
-            train_dataset,
-            modality="can",
-            feature_names=CAN_FEATURE_COLUMNS,
-        ),
+            modality=modality,
+            feature_names=feature_names[modality],
+        )
+        for modality in _model_modalities(config)
     }
     if any(
         standardizer.source_manifest_sha256 != input_hashes["pair_manifest"]
@@ -969,11 +1018,16 @@ def train_experiment(args: argparse.Namespace) -> dict[str, Any]:
     set_random_seed(requested_seeds[0])
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     model_id = config["model"]["model_id"]
-    experiment_id = f"fatigue_video_can_{model_id}_trainval_{timestamp}"
+    experiment_scope = "fatigue_video" if _model_modalities(config) == ("video",) else "fatigue_video_can"
+    experiment_id = f"{experiment_scope}_{model_id}_trainval_{timestamp}"
     experiment_root = (
         Path(args.output_root).resolve()
         if args.output_root
-        else pair_root / "fusion" / "fatigue_video_can" / model_id / "runs" / experiment_id
+        else (
+            pair_root / "baselines" / "fatigue_video" / model_id / "runs" / experiment_id
+            if _model_modalities(config) == ("video",)
+            else pair_root / "fusion" / "fatigue_video_can" / model_id / "runs" / experiment_id
+        )
     )
     try:
         experiment_root.relative_to(repository.resolve())
@@ -997,7 +1051,7 @@ def train_experiment(args: argparse.Namespace) -> dict[str, Any]:
         "status": "RUNNING",
         "formal_result": False,
         "task": "fatigue",
-        "modalities": list(MODALITIES),
+        "modalities": list(_model_modalities(config)),
         "model_id": model_id,
         "cohort": config["data"]["cohort"],
         "requested_seeds": requested_seeds,
@@ -1061,7 +1115,8 @@ def train_experiment(args: argparse.Namespace) -> dict[str, Any]:
     _write_seed_summary_csv(experiment_root / "seed_summary.csv", seed_results)
     _atomic_text(
         experiment_root / "README.md",
-        "# Fatigue video + CAN train/val development experiment\n\n"
+        f"# Fatigue {'video-only' if _model_modalities(config) == ('video',) else 'video + CAN'} "
+        "train/val development experiment\n\n"
         f"Model: `{model_id}`. This experiment uses the frozen paired cohort, "
         "evaluates validation only, and did not access test data. It is not a final test result.\n",
     )
