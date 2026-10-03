@@ -42,6 +42,31 @@ and full predictions must remain outside Git.
 For a one-seed smoke before the full run, append `--seeds 11`. Do not add a
 test manifest, test metric or test-dependent threshold/model choice.
 
+## G2 author delivery
+
+The private transfer ZIP is
+`fatigue_video_video_gru_v1_trainval_20260925T024907Z_G2_delivery_20261003.zip`.
+Its exact byte size and SHA-256 are recorded in
+`artifact_index/fatigue_video_baseline_v1.json` under `private_delivery_package`.
+The original run remains unchanged: 39 files / 792,770 bytes. The transfer ZIP
+contains 50 files, including the frozen train/val manifest, input validation
+reports, original independent audit, configuration, receiver instructions and
+author self-check evidence. Extract it into a new directory; the original run
+path is preserved below `Paired_Video_CAN_v1/`.
+
+On 2026-10-03 the author verified every original run file's size and SHA-256,
+all 1,600 video feature hashes and six-token lineage, independently recomputed
+the 7,632-token train-only normalizer and validation metrics, and loaded each
+checkpoint twice. Both saved-prediction and repeated-load probability
+differences were zero. An audit using only the extracted ZIP also passed.
+All three seeds' KSS>=7 parent recall remains zero.
+
+After non-author acceptance, PR #12 targets the
+`feat/fatigue-video-can-experiments` branch used by PR #9. G2 merges #12 into
+that feature branch; the later integration of PR #9 into `main` is a separate
+stage. Author self-check does not replace the reviewers' acceptance or confirm
+that the private transfer has been received.
+
 ## Locked C/H/P feature handoff
 
 `tools/baselines/fatigue_video/test_features.py` prepares the public test
