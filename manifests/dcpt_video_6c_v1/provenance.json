@@ -1,0 +1,17 @@
+{
+  "generated_on": "2026-09-27",
+  "source_video_root": "DCPT_UpperBody_Video",
+  "source_metadata": "metadata/video_windows_10s_v1.csv",
+  "source_feature_index": "processed/video_feature_index_v1.jsonl",
+  "source_label_scheme": "metadata/video_label_scheme_6c_v1.json",
+  "source_label_scheme_at_audit": "dcpt_6c_v1",
+  "formal_label_scheme": "dcpt_video_6c_v1",
+  "source_split_version": "dcpt_subject_24_8_8_seed2026_v1_provisional",
+  "candidate_split_version": "dcpt_subject_24_8_8_seed2026_v1_freeze_candidate",
+  "no_artifact_overwrite": true,
+  "no_rerandomization": true,
+  "original_tasks_02_06_09_present_but_excluded": true,
+  "raw_video_available_in_current_environment": false,
+  "p04_manual_review_complete": false,
+  "owner_signoff_complete": false
+}

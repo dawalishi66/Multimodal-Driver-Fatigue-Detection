@@ -89,5 +89,7 @@ python tools/fusion/fatigue_video_can/audit_train_val.py `
   --code-version <当前提交SHA>
 ```
 
-审计报告只写入外部产物目录。当前审计状态为PASS，且没有访问test。由于同一共同
-集合上的视频单模态基线尚未交付，这些开发结果不能冒充四模型正式公平主对比。
+审计报告只写入外部产物目录。当前审计状态为PASS，且没有访问test。同一共同
+集合上的视频单模态基线已由PR #12交付并独立验收，见
+`artifact_index/fatigue_video_baseline_v1.json`。四模型train/val开发对比已齐全，
+但不能冒充正式test主对比；test仍须单独书面解锁。

@@ -2,6 +2,8 @@
 
 This baseline closes the missing video-only comparator on the frozen
 `fatigue_video_can_complete8_train_val_v1` cohort from PR #9.
+The earlier 30-second feature handoff and legacy video result are documented
+separately in [HANDOFF_V2.md](HANDOFF_V2.md).
 
 ## Fixed contract
 

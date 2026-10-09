@@ -70,12 +70,19 @@
     "validation_parent_macro_f1_sample_std_ddof_1": 0.07530341979213385,
     "cohort_equivalence_status": "PASS"
   },
+  "same_cohort_video_comparator": {
+    "model_id": "video_gru_v1",
+    "artifact_index_path": "artifact_index/fatigue_video_baseline_v1.json",
+    "validation_parent_macro_f1_mean": 0.34595959595959597,
+    "validation_parent_macro_f1_sample_std_ddof_1": 0.0,
+    "cohort_equivalence_status": "PASS",
+    "test_manifest_accessed": false
+  },
   "limitations": [
     "These are development train/validation results, not formal test results.",
-    "A same-cohort video-only baseline is still missing, so the four-model fair comparison is incomplete.",
+    "The four-model fair comparison now covers train/validation only; formal test remains locked.",
     "DualModalMulT v1 validates time_s but uses sequence positions rather than real-time encoding.",
     "The observed MulT versus SimpleFusion mean difference is too small to claim superiority.",
     "Checkpoints, predictions, and full run packages remain outside Git."
   ]
 }
-
