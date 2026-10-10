@@ -86,6 +86,12 @@ def _validate_split(
         "can_shape": [300, 9],
         "batch_smoke": "PASS",
         "feature_hash_verification": "PASS",
+        "video_source_identity_verification": "PASS",
+        "video_five_second_grid_verification": "PASS",
+        "video_archives": [
+            {"filename": path.name, "sha256": file_sha256(path)}
+            for path in sorted({record.video_archive_path for record in dataset.records})
+        ],
     }
 
 

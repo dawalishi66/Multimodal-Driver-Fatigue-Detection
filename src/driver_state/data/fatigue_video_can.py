@@ -38,6 +38,11 @@ from driver_state.data.fatigue_pairing import (
     parse_bool,
     validate_normalized_video_time,
 )
+from driver_state.data.fatigue_video_source import (
+    load_video_source_index,
+    validate_video_subwindow_grid,
+    video_pair_binding_errors,
+)
 
 
 MODALITIES = ("video", "can")
@@ -199,6 +204,7 @@ class FatigueVideoCanDataset(Dataset):
             raise PermissionError("a development pair manifest must not contain test rows")
 
         records: list[FatigueVideoCanRecord] = []
+        paired_rows: list[tuple[dict[str, str], FatigueVideoCanRecord]] = []
         sample_ids: set[str] = set()
         video_sample_ids: set[str] = set()
         can_sample_ids: set[str] = set()
@@ -215,6 +221,7 @@ class FatigueVideoCanDataset(Dataset):
                     raise ValueError(f"duplicate {field}: {value}")
                 seen.add(value)
             records.append(record)
+            paired_rows.append((row, record))
 
         if not records:
             raise ValueError(f"no complete paired windows found for split {split!r}")
@@ -226,7 +233,7 @@ class FatigueVideoCanDataset(Dataset):
             )
         )
         self._validate_complete_parents(records)
-        self._validate_zip_members(records)
+        self._validate_video_source(paired_rows)
         self.records = tuple(records)
 
     def _parse_record(
@@ -379,21 +386,36 @@ class FatigueVideoCanDataset(Dataset):
                 raise ValueError(f"parent {parent_id} crosses subject or session")
 
     @staticmethod
-    def _validate_zip_members(records: Sequence[FatigueVideoCanRecord]) -> None:
-        expected: dict[Path, set[str]] = defaultdict(set)
-        for record in records:
-            expected[record.video_archive_path].add(record.video_feature_member)
-        for archive_path, expected_members in expected.items():
+    def _validate_video_source(
+        paired_rows: Sequence[tuple[dict[str, str], FatigueVideoCanRecord]]
+    ) -> None:
+        by_archive: dict[
+            Path, list[tuple[dict[str, str], FatigueVideoCanRecord]]
+        ] = defaultdict(list)
+        for pair in paired_rows:
+            by_archive[pair[1].video_archive_path].append(pair)
+        for archive_path, pairs in by_archive.items():
             try:
                 with zipfile.ZipFile(archive_path) as archive:
                     actual_members = set(archive.namelist())
+                    source_index = load_video_source_index(archive)
             except zipfile.BadZipFile as exc:
                 raise ValueError(f"invalid video feature archive: {archive_path.name}") from exc
-            missing = sorted(expected_members - actual_members)
+            missing = sorted(
+                record.video_feature_member
+                for _, record in pairs
+                if record.video_feature_member not in actual_members
+            )
             if missing:
                 raise FileNotFoundError(
                     f"video archive is missing {len(missing)} required members; first={missing[0]}"
                 )
+            for row, record in pairs:
+                errors = video_pair_binding_errors(row, source_index)
+                if errors:
+                    raise ValueError(
+                        f"video source binding mismatch for {record.sample_id}: {errors}"
+                    )
 
     def __len__(self) -> int:
         return len(self.records)
@@ -497,6 +519,10 @@ class FatigueVideoCanDataset(Dataset):
         errors = validate_normalized_video_time(
             arrays["time_s"], arrays["support_s"], duration_s=30.0
         )
+        if modality == "video":
+            errors += validate_video_subwindow_grid(
+                arrays["time_s"], arrays["support_s"]
+            )
         if errors:
             raise ValueError(
                 f"{record.sample_id}:{modality} invalid sample-relative time: {errors}"

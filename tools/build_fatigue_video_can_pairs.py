@@ -26,6 +26,11 @@ from driver_state.data.fatigue_pairing import (
     select_complete_parents,
     validate_normalized_video_time,
 )
+from driver_state.data.fatigue_video_source import (
+    load_video_source_index,
+    validate_video_subwindow_grid,
+    video_source_window_errors,
+)
 
 
 SYNC_EVIDENCE = (
@@ -227,6 +232,7 @@ def validate_video_features(
     feature_rows: list[dict[str, str]],
 ) -> tuple[dict[str, dict[str, str]], list[str]]:
     errors: list[str] = []
+    source_index = load_video_source_index(archive)
     feature_by_id: dict[str, dict[str, str]] = {}
     for row in feature_rows:
         sample_id = row["sample_id"]
@@ -238,9 +244,21 @@ def validate_video_features(
         errors.append("duplicate video 30-second sample_id")
     if set(video_by_id) != set(feature_by_id):
         errors.append("video window IDs and feature index IDs differ")
+    if set(video_by_id) != set(source_index.windows30) or set(feature_by_id) != set(
+        source_index.features
+    ):
+        errors.append("video source identity tables differ")
 
     expected_keys = {"x", "time_s", "valid_mask", "support_s", "observed_fraction"}
     for sample_id, row in feature_by_id.items():
+        if sample_id not in video_by_id:
+            continue
+        errors.extend(
+            f"video source {error}: {sample_id}"
+            for error in video_source_window_errors(
+                video_by_id[sample_id], row, source_index
+            )
+        )
         member = row["relative_path"]
         try:
             payload = archive.read(member)
@@ -284,6 +302,10 @@ def validate_video_features(
                     time_s, support_s, window_start_ms=start_ms
                 )
                 for error in validate_normalized_video_time(
+                    normalized_time, normalized_support
+                ):
+                    errors.append(f"video normalized time {error}: {sample_id}")
+                for error in validate_video_subwindow_grid(
                     normalized_time, normalized_support
                 ):
                     errors.append(f"video normalized time {error}: {sample_id}")

@@ -65,7 +65,16 @@ python tools/build_fatigue_video_can_pairs.py `
 ## Dataset 与验收
 
 `FatigueVideoCanDataset` 只读取 complete-8 train/val 清单，并在加载时校验
-样本、标签、父区间、特征形状、时间数组和 mask。全量哈希验收入口为：
+样本、标签、父区间、特征形状、时间数组和 mask。视频来源校验还会读取同一
+handoff ZIP 内的 `video_windows_30s_v2.csv`、`video_windows_5s_v2.csv` 和
+`video_feature_index_v2.csv`，将每条配对记录的驾驶员、session、split、标签、
+视频成员与 SHA、六个有序 5 秒来源窗口逐项绑定。视频特征归一化后必须对应
+`[0,5)、[5,10)、…、[25,30)` 的连续支持区间及各段中心；CAN 不使用视频的
+5 秒网格规则。缺失来源索引或身份、顺序、时间不符时直接拒绝，不静默跳过。
+
+来源索引与特征哈希位于同一 ZIP；正式使用前仍须按
+`artifact_index/fatigue_video_handoff_v2.json` 核对整个交付 ZIP 的冻结 SHA-256。
+全量哈希验收入口为：
 
 ```powershell
 python tools/validate_fatigue_video_can_data.py `
