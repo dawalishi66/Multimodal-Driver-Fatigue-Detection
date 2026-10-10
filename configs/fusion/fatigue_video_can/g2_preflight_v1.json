@@ -1,0 +1,82 @@
+{
+  "config_version": "1.0.0",
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "status": "g2_preflight_only_not_formal_result",
+  "task": "fatigue",
+  "dataset": "UL-DD",
+  "modalities": ["video", "can"],
+  "label_scheme": "uldd_kss_4_7_v1",
+  "num_classes": 3,
+  "classes": ["low", "medium", "high"],
+  "data": {
+    "cohort": "fatigue_video_can_complete8_train_val_v1",
+    "pair_manifest": "manifests/fatigue_video_can_complete8_train_val_v1.csv",
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "validation_report": "reports/fatigue_video_can_dataset_validation_v1.json",
+    "validation_report_sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639",
+    "expected_counts": {
+      "train_windows": 1272,
+      "train_parents": 159,
+      "val_windows": 328,
+      "val_parents": 41
+    },
+    "test_access": "forbidden_in_preflight"
+  },
+  "inputs": {
+    "video": {
+      "shape": [6, 96],
+      "feature_names": "video_feature_000_to_095",
+      "normalization": "train_only_masked_zscore_v1"
+    },
+    "can": {
+      "shape": [300, 9],
+      "feature_names": [
+        "heading_sin",
+        "heading_cos",
+        "pitch_sin",
+        "pitch_cos",
+        "roll_sin",
+        "roll_cos",
+        "speed_mps",
+        "rpm",
+        "gear"
+      ],
+      "normalization": "train_only_masked_zscore_v1"
+    }
+  },
+  "models": {
+    "simple_fusion": {
+      "class": "SimpleFusion",
+      "projection_dim": 64,
+      "classifier_hidden_dim": 64,
+      "dropout": 0.2
+    },
+    "dual_modal_mult": {
+      "class": "DualModalMulT",
+      "d_model": 30,
+      "num_heads": 5,
+      "cross_layers": 5,
+      "memory_layers": 5,
+      "dropout": 0.0,
+      "enable_a_from_b": true,
+      "enable_b_from_a": true,
+      "causal_attention": false
+    }
+  },
+  "training": {
+    "loss": "CrossEntropyLoss",
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "preflight": {
+    "seed": 11,
+    "windows_per_split": 16,
+    "optimizer_steps": 1,
+    "verify_each_feature_hash": false,
+    "require_clean_git": true,
+    "evaluate_metrics": false,
+    "access_test_manifest": false
+  }
+}

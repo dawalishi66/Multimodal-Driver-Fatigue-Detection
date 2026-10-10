@@ -2,4 +2,16 @@
 
 这里只存索引，不存原始数据、特征或权重。每个条目至少记录：artifact_id、类型、版本、稳定资源标识、字节数、SHA-256、关联配置/特征版本、负责人及访问说明。
 
-不要填写密码、令牌、短期签名 URL 或成员本机绝对路径。新版本不覆盖旧版本；下载后必须核对校验值。当前无已发布实验产物。
+不要填写密码、令牌、短期签名 URL 或成员本机绝对路径。新版本不覆盖旧版本；下载后必须核对校验值。当前 CAN 条目登记了预检包和 train/val 开发运行包，均不是正式 test 结果。视频＋CAN 配对条目另外登记全量特征哈希与 Dataset 验收报告。`fatigue_video_can_g2_preflight_v1.json` 只登记真实特征前反向、标准化和重载检查，不包含模型性能。
+
+`fatigue_video_can_train_val_v1.json` 登记 SimpleFusion 与 DualModalMulT 的三种子
+train/val 开发运行包、独立审计报告和小型汇总指标；它明确标记
+`formal_result=false` 和 `test_manifest_accessed=false`，不能替代最终 test 验收。
+
+`fatigue_video_baseline_v1.json` 登记同集合视频单模态三种子运行包及私有交付 ZIP。
+`fatigue_video_can_g3_recheck_20261009.json` 只登记合入最新 `main` 后的真实特征
+接口冒烟报告；G3 的 PR 审核与合并仍是单独门禁。
+
+`fatigue_video_can_g3_video_binding_20261010.json` 登记视频来源身份绑定和连续五秒
+网格校验修复后的全量 train/val 复验及两个融合模型接口冒烟。该索引不代表非作者
+审核完成或正式 test 结果。

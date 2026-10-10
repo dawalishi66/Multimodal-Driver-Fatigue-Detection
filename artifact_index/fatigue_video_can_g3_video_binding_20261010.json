@@ -1,0 +1,37 @@
+{
+  "index_version": "1.0.0",
+  "phase": "G3",
+  "task": "fatigue",
+  "artifact_type": "video_source_binding_review_fix",
+  "owner": "李坤洋",
+  "code_commit": "f4df004d581652f973de26be389ab7f4fbd48eae",
+  "cohort": "fatigue_video_can_complete8_train_val_v1",
+  "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+  "video_handoff_zip_sha256": "00a6a2fdb5596ecfe6ed6fc688f42ad7680f509346b3e10b1ebef3de6a59b4e5",
+  "storage_root_reference": "Paired_Video_CAN_v1",
+  "dataset_validation": {
+    "relative_path": "reports/fatigue_video_can_g3_video_source_binding_20261010.json",
+    "sha256": "18cee095d26fe04c11e1007588d2c5534eebcd834b71961bb3fd2b92b3c7ffaa",
+    "status": "PASS",
+    "train_windows": 1272,
+    "train_parents": 159,
+    "val_windows": 328,
+    "val_parents": 41,
+    "video_source_binding": "PASS",
+    "video_five_second_grid": "PASS",
+    "feature_hashes": "PASS"
+  },
+  "fusion_preflight": {
+    "relative_path": "preflight/fatigue_video_can/g3_video_binding_fix_20261010/preflight_report.json",
+    "sha256": "53119f57a8910df11565adf5b3f75b16550c5af74669c42b31acfaa17115e54e",
+    "status": "PASS",
+    "models": ["simple_fusion", "dual_modal_mult"],
+    "metrics_evaluated": false
+  },
+  "source_windows_checked": 1909,
+  "repository_cpu_tests_passed": 299,
+  "formal_result": false,
+  "test_manifest_accessed": false,
+  "review_gate": "PENDING_VIDEO_REVIEW_AND_LATEST_HEAD_CI",
+  "note": "No source data, frozen manifest, feature bytes, trained weights or earlier run package was changed."
+}
