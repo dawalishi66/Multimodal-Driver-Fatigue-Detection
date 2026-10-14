@@ -95,8 +95,10 @@ fusion model can join by `sample_id`:
   features exist).
 - `validate_audio_6c.py` is a 6c-aware validator (the public validator is
   hard-coded to 9 classes).
-- `check_fusion_pairs.py` asserts audio/video `sample_id`, label and split sets
-  are identical (result: 714/714 common, 0 mismatches).
+- `check_fusion_pairs.py` asserts audio/video `sample_id`, `label_scheme`,
+  `label_id`/`label_class`, `subject_id`, `split`, `session_id` and
+  `source_file` basename all agree (result: 714/714 common, 0 mismatches on
+  every field; see `docs/audio_handoff_v1.md`).
 
 ## Audio feature version v1 (PANNs Cnn14_16k)
 
