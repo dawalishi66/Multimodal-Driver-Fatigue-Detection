@@ -1,0 +1,98 @@
+{
+  "index_version": "1.0.0",
+  "task": "fatigue",
+  "modalities": ["video", "can"],
+  "artifact_type": "real_feature_g2_preflight",
+  "pair_root_reference": "Paired_Video_CAN_v1",
+  "run_id": "fatigue_video_can_g2_v1_20260912T040720Z",
+  "relative_path": "preflight/fatigue_video_can/g2_v1/fatigue_video_can_g2_v1_20260912T040720Z",
+  "status": "PASS",
+  "formal_result": false,
+  "metrics_evaluated": false,
+  "test_manifest_accessed": false,
+  "code_commit": "bd3e6628fc7ea5e8c66118dd60da5c6330e61d09",
+  "config_sha256": "5d8ceda19f0f0634151ae1771470e9293711674f4048971272694c700b6bf2cb",
+  "frozen_inputs": {
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "dataset_validation_report_sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639"
+  },
+  "cohort": "fatigue_video_can_complete8_train_val_v1",
+  "counts": {
+    "train_windows": 1272,
+    "train_parents": 159,
+    "val_windows": 328,
+    "val_parents": 41,
+    "g2_train_smoke_windows": 16,
+    "g2_val_smoke_windows": 16
+  },
+  "normalization": {
+    "method": "train_only_masked_zscore_v1",
+    "video_feature_dim": 96,
+    "video_valid_tokens": 7632,
+    "can_feature_dim": 9,
+    "can_valid_tokens": 381587
+  },
+  "models": {
+    "simple_fusion": {
+      "parameters": 15299,
+      "peak_cuda_memory_bytes": 71962112,
+      "forward_backward": "PASS",
+      "tail_padding_invariance": "PASS",
+      "checkpoint_reload": "PASS"
+    },
+    "dual_modal_mult": {
+      "parameters": 234693,
+      "peak_cuda_memory_bytes": 396025856,
+      "forward_backward": "PASS",
+      "tail_padding_invariance": "PASS",
+      "checkpoint_reload": "PASS"
+    }
+  },
+  "files": [
+    {
+      "path": "environment.txt",
+      "size_bytes": 519,
+      "sha256": "ee309ef44ce195dbf185f258189940980a56ab5235e88f84768eab9d95b046e2"
+    },
+    {
+      "path": "preflight_report.json",
+      "size_bytes": 3821,
+      "sha256": "80eb6a4f7fff91aa3d8fde1bf4bdb9e8a6bf2c3e9d32182eee6747e46806aed6"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 351,
+      "sha256": "0137ec270f0ea28d02904da2cdbf76fbc29edcecdb8f60a5fb3c89b04ed12af7"
+    },
+    {
+      "path": "resolved_config.json",
+      "size_bytes": 2379,
+      "sha256": "4aaa7421347306aa444bb7bd233d7fd4e2072a3b331e268121e3953912b108e0"
+    },
+    {
+      "path": "normalizers/can.json",
+      "size_bytes": 1010,
+      "sha256": "259f559a955627af705ec4e46be7ade9d9e3732bc0202d9968bc0d8e1dd92baa"
+    },
+    {
+      "path": "normalizers/video.json",
+      "size_bytes": 7869,
+      "sha256": "7da45921a7be4cb75281f253ef260f2d16f981c9853b1279c9388bb167d7a960"
+    },
+    {
+      "path": "simple_fusion/SMOKE_ONLY_DO_NOT_USE.pt",
+      "size_bytes": 64973,
+      "sha256": "aafeecf7f3ddbc85d1b67c508ea518b9f74e44bd5d6b080563af2c801a8427c1"
+    },
+    {
+      "path": "dual_modal_mult/SMOKE_ONLY_DO_NOT_USE.pt",
+      "size_bytes": 1022527,
+      "sha256": "abb0cbdb02c51e187f36fdf8f4ca4eddce462767dc85f8d1fc8cb7e5df5f2198"
+    }
+  ],
+  "limitations": [
+    "No performance metric was calculated.",
+    "Smoke checkpoints contain one optimizer step and are not trained model weights.",
+    "DualModalMulT v1 uses sequence positions rather than real-time encoding."
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "index_version": "1.0.0",
+  "phase": "G3",
+  "task": "fatigue",
+  "artifact_type": "real_train_val_integration_smoke",
+  "owner": "李坤洋",
+  "pair_root_reference": "Paired_Video_CAN_v1",
+  "relative_path": "preflight/fatigue_video_can/g3_recheck_publish_20261009",
+  "report_name": "preflight_report.json",
+  "report_sha256": "0cb8a0536d59ea965768fb2f15ea3e824a990a4ebc9c8a46e81ee9d8b82d2ebc",
+  "code_commit": "5db59b7cd51aee5d6bb546a145c9646a0d1367a2",
+  "cohort": "fatigue_video_can_complete8_train_val_v1",
+  "models": ["simple_fusion", "dual_modal_mult"],
+  "checks": {
+    "real_feature_read": "PASS",
+    "train_only_normalization": "PASS",
+    "forward_backward": "PASS",
+    "tail_padding_invariance": "PASS",
+    "checkpoint_save_reload": "PASS"
+  },
+  "preflight_status": "PASS",
+  "g3_merge_gate": "PENDING_CI_AND_NON_AUTHOR_REVIEWS",
+  "formal_result": false,
+  "metrics_evaluated": false,
+  "test_manifest_accessed": false,
+  "note": "Checkpoints in this preflight received one optimizer step and are not trained model weights."
+}

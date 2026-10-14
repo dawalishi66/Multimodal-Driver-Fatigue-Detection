@@ -1,0 +1,108 @@
+{
+  "config_version": "1.0.0-train-val",
+  "protocol_version": "0.2",
+  "schema_version": "0.2.0",
+  "status": "development_train_val_not_formal_result",
+  "task": "fatigue",
+  "dataset": "UL-DD",
+  "modalities": ["video", "can"],
+  "label_scheme": "uldd_kss_4_7_v1",
+  "num_classes": 3,
+  "classes": ["low", "medium", "high"],
+  "data": {
+    "cohort": "fatigue_video_can_complete8_train_val_v1",
+    "pair_manifest": "manifests/fatigue_video_can_complete8_train_val_v1.csv",
+    "pair_manifest_sha256": "201066ddb6bccb39f63db6a115662f0d6b5c33c55d47673374d143b04f646e7b",
+    "dataset_validation_report": "reports/fatigue_video_can_dataset_validation_v1.json",
+    "dataset_validation_report_sha256": "1fa4f95b15677710da667559c124284497674e4ab42f58b356eabfa387941639",
+    "g2_preflight_report": "preflight/fatigue_video_can/g2_v1/fatigue_video_can_g2_v1_20260912T040720Z/preflight_report.json",
+    "g2_preflight_report_sha256": "80eb6a4f7fff91aa3d8fde1bf4bdb9e8a6bf2c3e9d32182eee6747e46806aed6",
+    "video_feature_version": "distilled_prefix10_r160_mean_seed20260833",
+    "video_source_checkpoint_sha256": "b001959e538b7dd99b73a71aa49503d34763b4ea6bdf9e2e7dde3966746cdbac",
+    "can_feature_version": "uldd_can_10hz_boxcar_1.0.0",
+    "sync_status": "provider_documented_aligned_not_hardware_clock_verified",
+    "complete_parent_policy": "exactly_8_valid_paired_30s_windows",
+    "expected_counts": {
+      "train_windows": 1272,
+      "train_parents": 159,
+      "train_subjects": 10,
+      "train_sessions": 18,
+      "val_windows": 328,
+      "val_parents": 41,
+      "val_subjects": 3,
+      "val_sessions": 5
+    }
+  },
+  "inputs": {
+    "video": {
+      "shape": [6, 96],
+      "time_reference": "sample_relative_0_to_30_seconds",
+      "normalization": "train_only_masked_zscore_v1"
+    },
+    "can": {
+      "shape": [300, 9],
+      "feature_columns": [
+        "heading_sin",
+        "heading_cos",
+        "pitch_sin",
+        "pitch_cos",
+        "roll_sin",
+        "roll_cos",
+        "speed_mps",
+        "rpm",
+        "gear"
+      ],
+      "time_reference": "sample_relative_0_to_30_seconds",
+      "normalization": "train_only_masked_zscore_v1"
+    },
+    "mask_semantics": "true_is_valid"
+  },
+  "model": {
+    "model_id": "dual_modal_mult_v1",
+    "class": "DualModalMulT",
+    "d_model": 30,
+    "num_heads": 5,
+    "cross_layers": 5,
+    "memory_layers": 5,
+    "dropout": 0.0,
+    "enable_a_from_b": true,
+    "enable_b_from_a": true,
+    "causal_attention": false,
+    "position_encoding": "sequence_sinusoidal",
+    "time_s_used_for_prediction": false
+  },
+  "training": {
+    "loss": "CrossEntropyLoss",
+    "class_imbalance_strategy": "none_in_v1_default",
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "physical_batch_size": 32,
+    "effective_batch_size": 32,
+    "gradient_accumulation_steps": 1,
+    "gradient_clipping": "none",
+    "max_epochs": 100,
+    "early_stopping_patience": 15,
+    "selection_metric": "val_parent_macro_f1",
+    "selection_tie_break": "earlier_epoch",
+    "seeds": [11, 22, 33],
+    "automatic_mixed_precision": false,
+    "scheduler": "none"
+  },
+  "evaluation": {
+    "primary_unit": "parent_240s",
+    "primary_metric": "macro_f1_fixed_classes",
+    "aggregation": "mean_of_8_window_probability_vectors",
+    "secondary_unit": "window_30s",
+    "fixed_class_ids": [0, 1, 2],
+    "zero_division": 0,
+    "majority_class_source": "train_labels_only",
+    "test_access": false
+  },
+  "execution": {
+    "num_workers": 0,
+    "cache_features_in_memory": true,
+    "verify_each_feature_hash": false,
+    "require_clean_git": true
+  }
+}
